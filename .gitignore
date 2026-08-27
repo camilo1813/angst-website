@@ -21,3 +21,6 @@ yarn-error.log*
 
 # jetbrains setting folder
 .idea/
+
+# temporary visual QA tooling (Playwright) — not part of production UI
+/qa/

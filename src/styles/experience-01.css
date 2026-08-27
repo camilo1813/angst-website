@@ -182,7 +182,7 @@
   margin: 0;
   font-weight: 600;
   font-size: clamp(64px, 6.6vw, 112px);
-  line-height: 0.91;
+  line-height: 0.935;
   letter-spacing: -0.055em;
   color: var(--color-white);
 }
@@ -219,6 +219,15 @@
   animation: conclusion-reveal 1s var(--ease-premium) 2.8s both;
 }
 
+/* On large desktops the conclusion may claim a wider independent
+   max-width than the headline block, so it can sit on a single line. */
+@media (min-width: 1600px) {
+  .conclusion {
+    width: max-content;
+    max-width: 920px;
+  }
+}
+
 /* =========================================================
    SIGNAL HINT
    ========================================================= */
@@ -244,19 +253,18 @@
 }
 
 .signal-node--a {
-  animation: signal-node-reveal 0.9s var(--ease-premium) 4s both;
+  animation: signal-node-a-reveal 0.9s var(--ease-premium) 4s both;
 }
 
 .signal-node--b {
-  animation: signal-node-reveal 0.9s var(--ease-premium) 4.5s both;
+  animation: signal-node-b-reveal 0.9s var(--ease-premium) 4.5s both;
 }
 
 .signal-line {
   stroke: var(--color-signal);
   stroke-width: 1;
   opacity: 0;
-  stroke-dasharray: 4 3;
-  animation: signal-line-reveal 1.1s var(--ease-premium) 4.85s both;
+  animation: signal-line-reveal 1.3s var(--ease-premium) 4.85s both;
 }
 
 @media (max-width: 700px) {
@@ -340,23 +348,30 @@
   }
 }
 
-@keyframes signal-node-reveal {
+@keyframes signal-node-a-reveal {
   from {
     opacity: 0;
   }
   to {
-    opacity: 0.9;
+    opacity: 0.55;
+  }
+}
+
+@keyframes signal-node-b-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.18;
   }
 }
 
 @keyframes signal-line-reveal {
   from {
     opacity: 0;
-    stroke-dashoffset: 24;
   }
   to {
-    opacity: 0.35;
-    stroke-dashoffset: 0;
+    opacity: 0.12;
   }
 }
 
@@ -414,6 +429,7 @@
 
   .headline {
     font-size: clamp(48px, 14vw, 68px);
+    line-height: 0.91;
   }
 
   .conclusion {
@@ -422,6 +438,26 @@
 
   .scroll-indicator {
     bottom: 24px;
+  }
+}
+
+/* Very narrow screens: the 48px mobile floor clips "Environments." —
+   drop to a smaller floor and tighten tracking slightly for this range only. */
+@media (max-width: 350px) {
+  .headline {
+    font-size: 44px;
+    letter-spacing: -0.075em;
+  }
+}
+
+/* 351–400px: the general mobile clamp (14vw) leaves "Environments." with
+   sub-1px right-side breathing room at 390px — too fragile across
+   rasterization/browser/DPR differences. Scale the whole headline group
+   down very slightly (same proportions, no letter-spacing change) to
+   restore reliable breathing room across this narrow band. */
+@media (min-width: 351px) and (max-width: 400px) {
+  .headline {
+    font-size: 13.65vw;
   }
 }
 
@@ -445,14 +481,16 @@
     letter-spacing: inherit;
   }
 
-  .signal-node--a,
+  .signal-node--a {
+    opacity: 0.55;
+  }
+
   .signal-node--b {
-    opacity: 0.9;
+    opacity: 0.18;
   }
 
   .signal-line {
-    opacity: 0.35;
-    stroke-dashoffset: 0;
+    opacity: 0.12;
   }
 
   .scroll-indicator {
