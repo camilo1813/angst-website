@@ -1,0 +1,60 @@
+---
+---
+
+<header class="site-header">
+  <a class="site-header__brand" href="#the-void">ANGST</a>
+
+  <div class="site-header__nav">
+    <ul class="site-header__links">
+      <li><a href="#innovation">Innovation</a></li>
+      <li><a href="#platform">Platform</a></li>
+      <li><a href="#company">Company</a></li>
+    </ul>
+    <a class="site-header__cta" href="#discuss-a-pilot">Discuss a Pilot</a>
+
+    <button
+      class="site-header__menu-trigger"
+      type="button"
+      aria-expanded="false"
+      aria-controls="mobile-nav-panel"
+      aria-label="Open menu"
+      id="mobile-nav-trigger"
+    >
+      <span></span>
+    </button>
+  </div>
+</header>
+
+<nav
+  class="site-header__mobile-panel"
+  id="mobile-nav-panel"
+  hidden
+  aria-label="Mobile"
+>
+  <a href="#innovation">Innovation</a>
+  <a href="#platform">Platform</a>
+  <a href="#company">Company</a>
+  <a class="site-header__cta" href="#discuss-a-pilot">Discuss a Pilot</a>
+</nav>
+
+<script>
+  const trigger = document.getElementById('mobile-nav-trigger');
+  const panel = document.getElementById('mobile-nav-panel');
+
+  if (trigger && panel) {
+    trigger.addEventListener('click', () => {
+      const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+      trigger.setAttribute('aria-expanded', String(!isOpen));
+      trigger.setAttribute('aria-label', isOpen ? 'Open menu' : 'Close menu');
+      panel.toggleAttribute('hidden', isOpen);
+    });
+
+    panel.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => {
+        trigger.setAttribute('aria-expanded', 'false');
+        trigger.setAttribute('aria-label', 'Open menu');
+        panel.setAttribute('hidden', '');
+      });
+    });
+  }
+</script>

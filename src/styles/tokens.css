@@ -1,0 +1,25 @@
+:root {
+  /* colour system */
+  --color-void: #050607;
+  --color-surface: #090b0d;
+  --color-white: #f5f6f7;
+  --color-grey-100: #d4d7da;
+  --color-grey-300: #9aa0a6;
+  --color-grey-500: #5b6066;
+  --color-signal: #8bcbff;
+
+  /* layout */
+  --page-gutter: 7vw;
+  --header-height: 76px;
+  --content-max-width: 1440px;
+
+  /* motion */
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 640px) {
+  :root {
+    --page-gutter: 24px;
+    --header-height: 64px;
+  }
+}
