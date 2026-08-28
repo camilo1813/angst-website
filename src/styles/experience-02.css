@@ -1,0 +1,160 @@
+@import './tokens.css';
+
+/* =========================================================
+   SECTION / STICKY STAGE
+
+   Same void colour as Experience 01, no visible boundary. The section
+   is tall (240–280svh); a 100svh child stays pinned via position:sticky
+   while scroll position drives a 0→1 progress value.
+   ========================================================= */
+
+.e02-section {
+  position: relative;
+  min-height: 260svh;
+  background: var(--color-void);
+}
+
+.e02-stage {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+}
+
+/* =========================================================
+   CANVAS LAYER
+
+   Full-bleed, transparent, no border/card — merges into the page
+   background. Opacity stays at 1 in normal (scroll-driven) mode; the
+   rm-pending/transition pair is used only on the reduced-motion path.
+   ========================================================= */
+
+.e02-canvas-root {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 1;
+  transition: opacity 0.9s var(--ease-premium);
+}
+
+.e02-canvas-root.rm-pending {
+  opacity: 0;
+}
+
+.e02-canvas-root canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* =========================================================
+   STATIC FALLBACK (no WebGL)
+   ========================================================= */
+
+.e02-fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: none;
+}
+
+.e02-fallback svg {
+  width: 100%;
+  height: 100%;
+}
+
+.no-webgl .e02-canvas-root {
+  display: none;
+}
+
+.no-webgl .e02-fallback {
+  display: block;
+}
+
+/* =========================================================
+   DESKTOP COPY PROTECTION FIELD
+
+   A temporary shield between the canvas (z:0) and the hero-echo
+   typography (z:2) — not a visible design element. It exists only so
+   scattered environmental/structural points can't visually collide
+   with the fading hero copy during the STATE 6 handoff. Void-coloured,
+   horizontal fade, strength driven entirely by the existing scroll
+   progress (no new timer) via an inline opacity set in the module
+   script below. Absent on mobile — the stacked mobile hero isn't
+   left-anchored the same way and doesn't have this collision risk.
+   ========================================================= */
+
+.e02-copy-shield {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to right,
+    rgba(5, 6, 7, 1) 0%,
+    rgba(5, 6, 7, 1) 35%,
+    rgba(5, 6, 7, 0.85) 45%,
+    rgba(5, 6, 7, 0) 60%,
+    rgba(5, 6, 7, 0) 100%
+  );
+}
+
+@media (max-width: 640px) {
+  .e02-copy-shield {
+    display: none;
+  }
+}
+
+/* =========================================================
+   HERO ECHO OVERLAY
+
+   Reuses Experience 01's own .hero/.eyebrow/.headline/.conclusion/
+   .signal-hint classes verbatim (from experience-01.css, unmodified) so
+   the visual identity is exact. This is a second, independent instance
+   of that markup living inside Experience 02's own sticky stage — the
+   original Experience 01 section is never touched or reused.
+   ========================================================= */
+
+.e02-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.e02-hero-echo .eyebrow,
+.e02-hero-echo .headline .line span,
+.e02-hero-echo .conclusion {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+.e02-hero-echo .signal-node--a {
+  animation: none;
+  opacity: 0.55;
+}
+
+.e02-hero-echo .signal-node--b {
+  animation: none;
+  opacity: 0.18;
+}
+
+.e02-hero-echo .signal-line {
+  animation: none;
+  opacity: 0.12;
+}
+
+/* The echo doesn't need its own scroll cue — Experience 02 owns scroll. */
+.e02-hero-echo .scroll-indicator {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .e02-hero-echo .eyebrow,
+  .e02-hero-echo .headline .line span,
+  .e02-hero-echo .conclusion {
+    opacity: 0;
+  }
+}

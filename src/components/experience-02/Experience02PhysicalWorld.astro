@@ -1,0 +1,95 @@
+---
+import '../../styles/experience-02.css';
+import Experience02Fallback from './Experience02Fallback.astro';
+import PhysicalWorldCanvas from './PhysicalWorldCanvas.tsx';
+---
+
+<section class="e02-section" data-e02-section aria-describedby="e02-scene-description">
+  <div class="e02-stage">
+    <Experience02Fallback />
+    <PhysicalWorldCanvas client:load />
+
+    <div class="e02-copy-shield" data-e02-copy-shield aria-hidden="true"></div>
+
+    <div class="e02-overlay e02-hero-echo" data-e02-hero-echo aria-hidden="true">
+      <div class="hero">
+        <p class="eyebrow">Physical Safety Intelligence</p>
+        <h1 class="headline">
+          <span class="line line--life"><span>Life.</span></span>
+          <span class="line line--machines"><span>Machines.</span></span>
+          <span class="line line--environments"><span>Environments.</span></span>
+        </h1>
+        <p class="conclusion">One Safety Intelligence Layer.</p>
+      </div>
+
+      <div class="signal-hint">
+        <svg viewBox="0 0 160 160" role="presentation" focusable="false">
+          <line class="signal-line" x1="22" y1="96" x2="118" y2="42"></line>
+          <circle
+            class="signal-node signal-node--a"
+            data-e02-signal-anchor
+            cx="22"
+            cy="96"
+            r="2.2"
+          ></circle>
+          <circle class="signal-node signal-node--b" cx="118" cy="42" r="1.6"></circle>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <p id="e02-scene-description" class="visually-hidden">
+    Abstract spatial representation of living presence, machinery, and
+    environmental conditions forming within one physical safety field.
+  </p>
+</section>
+
+<script is:inline>
+  (function () {
+    try {
+      var canvas = document.createElement('canvas');
+      var ok = !!(
+        window.WebGLRenderingContext &&
+        (canvas.getContext('webgl2') || canvas.getContext('webgl'))
+      );
+      if (!ok) document.documentElement.classList.add('no-webgl');
+    } catch (e) {
+      document.documentElement.classList.add('no-webgl');
+    }
+  })();
+</script>
+
+<script>
+  import { createScrollProgress, prefersReducedMotion } from '../../lib/scrollProgress';
+  import { computeSceneValues } from '../../lib/sceneMaps';
+
+  const section = document.querySelector('[data-e02-section]');
+  const echo = document.querySelector('[data-e02-hero-echo]');
+  const shield = document.querySelector('[data-e02-copy-shield]');
+
+  if (section && echo) {
+    const eyebrow = echo.querySelector('.eyebrow');
+    const life = echo.querySelector('.line--life span');
+    const machines = echo.querySelector('.line--machines span');
+    const environments = echo.querySelector('.line--environments span');
+    const conclusion = echo.querySelector('.conclusion');
+
+    const isMobileViewport = () => window.matchMedia('(max-width: 640px)').matches;
+
+    const apply = (progress) => {
+      const s = computeSceneValues(progress, isMobileViewport());
+      if (eyebrow) eyebrow.style.opacity = String(s.heroEyebrowOpacity);
+      if (life) life.style.opacity = String(s.heroLifeOpacity);
+      if (machines) machines.style.opacity = String(s.heroMachinesOpacity);
+      if (environments) environments.style.opacity = String(s.heroEnvironmentsOpacity);
+      if (conclusion) conclusion.style.opacity = String(s.heroConclusionOpacity);
+      if (shield) shield.style.opacity = String(s.copyProtectionStrength);
+    };
+
+    if (prefersReducedMotion()) {
+      apply(1);
+    } else {
+      createScrollProgress(section, (state) => apply(state.progress));
+    }
+  }
+</script>
