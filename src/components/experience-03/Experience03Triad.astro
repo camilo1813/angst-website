@@ -1,0 +1,20 @@
+---
+import '../../styles/experience-03.css';
+import Experience02Fallback from '../experience-02/Experience02Fallback.astro';
+import Experience03Controller from './Experience03Controller.tsx';
+import Experience03Overlay from './Experience03Overlay.astro';
+---
+
+<section
+  class="e03-section"
+  data-e03-section
+  aria-label="Life, Machines, Environments — how the physical world holds together"
+>
+  <div class="e03-stage">
+    <div class="e03-fallback" data-e03-fallback aria-hidden="true">
+      <Experience02Fallback />
+    </div>
+    <Experience03Controller client:load />
+    <Experience03Overlay />
+  </div>
+</section>

@@ -1,0 +1,128 @@
+---
+---
+
+<div class="e03-overlay">
+  <p class="e03-label e03-label--orientation" data-e03-label="orientation">Physical World</p>
+
+  <div class="e03-label e03-label--life" data-e03-label="life">
+    <h2 class="e03-label__word">Life</h2>
+    <p class="e03-label__line">Living presence.</p>
+  </div>
+
+  <div class="e03-label e03-label--machines" data-e03-label="machines">
+    <h2 class="e03-label__word">Machines</h2>
+    <p class="e03-label__line">Engineered systems.</p>
+  </div>
+
+  <div class="e03-label e03-label--environments" data-e03-label="environments">
+    <h2 class="e03-label__word">Environments</h2>
+    <p class="e03-label__line">Physical conditions.</p>
+  </div>
+
+  {/*
+    Positioning wrapper only — it never carries opacity. The supporting
+    line, the final payoff line, and the mobile shield are three
+    independently-controlled siblings, so softening the supporting line
+    can never attenuate the payoff or the shield (opacity multiplies
+    down the tree).
+  */}
+  <div class="e03-statement">
+    <div class="e03-statement-shield" data-e03-statement-shield aria-hidden="true"></div>
+    <p class="e03-statement-primary" data-e03-label="statement-primary">
+      Safety does not exist<br />
+      inside any one of them.
+    </p>
+    <p class="e03-statement-final" data-e03-label="statement-final">
+      It exists <span class="e03-nowrap">between them.</span>
+    </p>
+  </div>
+</div>
+
+{/*
+  No-JavaScript fallback: every E03 label starts at opacity 0 and is
+  revealed only by the scroll script below. Without JS, show the thesis
+  as one static, stacked composition instead of the scroll sequence.
+  Contains styles only (no text), so nothing is duplicated for assistive
+  technology when JS is enabled — noscript content is inert then.
+*/}
+<noscript>
+  <style is:inline>
+    .e03-overlay {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(18px, 3.2vh, 36px);
+      padding: calc(var(--header-height) + 16px) var(--page-gutter) 32px;
+      text-align: center;
+    }
+    .e03-overlay .e03-label,
+    .e03-overlay .e03-statement {
+      position: static;
+      transform: none;
+      width: auto;
+      max-width: 720px;
+      text-align: center;
+      opacity: 1;
+    }
+    .e03-overlay .e03-label--orientation {
+      display: none;
+    }
+    .e03-overlay .e03-statement-primary,
+    .e03-overlay .e03-statement-final {
+      opacity: 1;
+    }
+    .e03-overlay .e03-statement {
+      margin-top: clamp(4px, 1.5vh, 16px);
+    }
+    .e03-overlay .e03-statement-shield {
+      display: none;
+    }
+    .e03-overlay .e03-label__word {
+      font-size: clamp(30px, 3.4vw, 56px);
+    }
+  </style>
+</noscript>
+
+<script>
+  import { createScrollProgress } from '../../lib/scrollProgress';
+  import { computeExperience03State, computeFallbackBucket } from '../../lib/experience03Maps';
+
+  const section = document.querySelector('[data-e03-section]');
+  const overlay = section?.querySelector('.e03-overlay');
+  const fallback = section?.querySelector('[data-e03-fallback]');
+
+  if (section && overlay) {
+    const orientation = overlay.querySelector('[data-e03-label="orientation"]') as HTMLElement | null;
+    const life = overlay.querySelector('[data-e03-label="life"]') as HTMLElement | null;
+    const machines = overlay.querySelector('[data-e03-label="machines"]') as HTMLElement | null;
+    const environments = overlay.querySelector('[data-e03-label="environments"]') as HTMLElement | null;
+    const statementPrimary = overlay.querySelector('[data-e03-label="statement-primary"]') as HTMLElement | null;
+    const statementFinal = overlay.querySelector('[data-e03-label="statement-final"]') as HTMLElement | null;
+    const statementShield = overlay.querySelector('[data-e03-statement-shield]') as HTMLElement | null;
+
+    const mobileMedia = window.matchMedia('(max-width: 640px)');
+    let lastProgress = 0;
+
+    const apply = (progress: number) => {
+      lastProgress = progress;
+      const state = computeExperience03State(progress, mobileMedia.matches);
+      if (orientation) orientation.style.opacity = String(state.labels.orientation);
+      if (life) life.style.opacity = String(state.labels.life);
+      if (machines) machines.style.opacity = String(state.labels.machines);
+      if (environments) environments.style.opacity = String(state.labels.environments);
+      if (statementPrimary) statementPrimary.style.opacity = String(state.labels.statementPrimary);
+      if (statementFinal) statementFinal.style.opacity = String(state.labels.statementFinal);
+      if (statementShield) statementShield.style.opacity = String(state.labels.mobileStatementShield);
+      if (fallback) fallback.setAttribute('data-e03-fallback-state', computeFallbackBucket(progress));
+    };
+
+    // Reduced motion still tracks real scroll here (section 26: "allow
+    // scroll to present simplified states... straightforward opacity
+    // transitions") — only the CSS transition duration/easing and the
+    // scene's own per-frame ambient motion are suppressed elsewhere.
+    apply(0);
+    createScrollProgress(section, (scrollState) => apply(scrollState.progress));
+    mobileMedia.addEventListener('change', () => apply(lastProgress));
+  }
+</script>

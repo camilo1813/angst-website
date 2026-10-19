@@ -7,10 +7,8 @@ import {
 } from '../../lib/scrollProgress';
 import { computeSceneValues, getCameraProfile } from '../../lib/sceneMaps';
 import { projectScreenPointToWorld } from '../../lib/signalAlignment';
+import { DESKTOP_BUDGET, MOBILE_BUDGET } from '../../lib/pointBudgets';
 import PhysicalWorldScene from './PhysicalWorldScene';
-
-const DESKTOP_BUDGET = { life: 180, machine: 60, environment: 220, structural: 140, bridge: 35 };
-const MOBILE_BUDGET = { life: 70, machine: 25, environment: 70, structural: 40, bridge: 15 };
 
 const MOBILE_BREAKPOINT = '(max-width: 640px)';
 
