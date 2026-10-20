@@ -19,7 +19,12 @@ export interface ScrollProgressHandle {
   getState: () => ScrollProgressState;
 }
 
-const SCROLL_IDLE_MS = 500;
+/** Scroll-idle window: `isScrolling` stays true until this long after the last scroll event. */
+export const SCROLL_IDLE_MS = 500;
+/** Minimum progress change that is re-emitted to consumers (filters sub-pixel jitter). */
+export const PROGRESS_EMIT_THRESHOLD = 0.0005;
+/** A section counts as "near" while within this fraction of the viewport height above/below it. */
+export const NEAR_MARGIN_FRACTION = 0.25;
 
 /**
  * Computes normalized scroll progress (0 → 1) through a tall section's
@@ -67,7 +72,7 @@ export function createScrollProgress(
       return;
     }
     const progress = computeSectionProgress(sectionEl);
-    if (Math.abs(progress - lastProgress) > 0.0005) {
+    if (Math.abs(progress - lastProgress) > PROGRESS_EMIT_THRESHOLD) {
       lastProgress = progress;
       state.progress = progress;
       notify();
@@ -89,7 +94,7 @@ export function createScrollProgress(
       notify();
       ensureLoop();
     },
-    { rootMargin: '25% 0px 25% 0px', threshold: 0 },
+    { rootMargin: `${NEAR_MARGIN_FRACTION * 100}% 0px ${NEAR_MARGIN_FRACTION * 100}% 0px`, threshold: 0 },
   );
   observer.observe(sectionEl);
 

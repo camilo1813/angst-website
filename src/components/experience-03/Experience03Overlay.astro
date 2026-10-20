@@ -85,7 +85,7 @@
 </noscript>
 
 <script>
-  import { createScrollProgress } from '../../lib/scrollProgress';
+  import { subscribeSectionProgress } from '../../lib/story/progressSource';
   import { computeExperience03State, computeFallbackBucket } from '../../lib/experience03Maps';
 
   const section = document.querySelector('[data-e03-section]');
@@ -122,7 +122,7 @@
     // transitions") — only the CSS transition duration/easing and the
     // scene's own per-frame ambient motion are suppressed elsewhere.
     apply(0);
-    createScrollProgress(section, (scrollState) => apply(scrollState.progress));
+    subscribeSectionProgress('e03-overlay', 'e03', section, (scrollState) => apply(scrollState.progress));
     mobileMedia.addEventListener('change', () => apply(lastProgress));
   }
 </script>

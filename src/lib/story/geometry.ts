@@ -3,7 +3,10 @@
 // P1 (shadow mode): these functions reproduce, from one cached measurement of the
 // page, exactly what each experience's local `computeSectionProgress` computes from
 // its own live getBoundingClientRect(). They are the future single source of truth
-// for scroll progress; nothing renders from them yet.
+// for scroll progress. P2A: E02/E03 now consume progress derived from these functions
+// (see coordinator.ts / progressSource.ts); the legacy per-section path remains as rollback.
+
+import { NEAR_MARGIN_FRACTION } from '../scrollProgress';
 
 export type SectionId = 'e01' | 'e02' | 'e03';
 
@@ -60,7 +63,7 @@ export function segmentAt(scrollY: number, e02: SectionGeometry, e03: SectionGeo
 
 /** Whether a section's local scroll controller is currently live (same rule as scrollProgress: viewport ±25%). */
 export function sectionNear(scrollY: number, s: SectionGeometry, innerHeight: number): boolean {
-  const margin = innerHeight * 0.25;
+  const margin = innerHeight * NEAR_MARGIN_FRACTION;
   const viewTop = scrollY - margin;
   const viewBottom = scrollY + innerHeight + margin;
   return s.top < viewBottom && s.top + s.height > viewTop;

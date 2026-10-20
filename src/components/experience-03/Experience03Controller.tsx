@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import {
-  createScrollProgress,
-  prefersReducedMotion,
-  type ScrollProgressState,
-} from '../../lib/scrollProgress';
+import { prefersReducedMotion, type ScrollProgressState } from '../../lib/scrollProgress';
+import { subscribeSectionProgress } from '../../lib/story/progressSource';
 import { computeSceneValues, getCameraProfile } from '../../lib/sceneMaps';
 import { projectScreenPointToWorld } from '../../lib/signalAlignment';
 import { DESKTOP_BUDGET, MOBILE_BUDGET } from '../../lib/pointBudgets';
@@ -82,7 +79,7 @@ export default function Experience03Controller() {
     // Reduced motion still tracks real scroll (no autoplay, no timers) —
     // only the ambient per-frame motion is suppressed below. Scroll still
     // drives straightforward category opacity transitions per spec.
-    const handle = createScrollProgress(sectionEl, setScrollState);
+    const handle = subscribeSectionProgress('e03-canvas', 'e03', sectionEl, setScrollState);
     return () => handle.destroy();
   }, []);
 

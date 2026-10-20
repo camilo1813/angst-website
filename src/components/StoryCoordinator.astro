@@ -1,28 +1,33 @@
 ---
-// Shared story coordinator — P1 SHADOW MODE.
-// Renders no markup. Its script runs the coordinator beside the existing E02/E03 logic;
-// nothing reads from it for rendering yet. Disable entirely with PUBLIC_STORY_COORDINATOR=off.
+// Shared story coordinator — P2A: PROGRESS SOURCE OF TRUTH.
+// Renders no markup. E02/E03 consumers obtain their progress through lib/story/progressSource
+// (coordinator by default; legacy per-section controllers as a temporary QA rollback).
+// This script exposes the coordinator for QA and attaches the (reverse) comparator on request.
+// Disable the coordinator entirely with PUBLIC_STORY_COORDINATOR=off (forces legacy progress).
 ---
 
 <script>
-  import { createStoryCoordinator, STORY_COORDINATOR_VERSION } from '../lib/story/coordinator';
+  import { getStoryCoordinator, STORY_COORDINATOR_VERSION } from '../lib/story/coordinator';
   import { attachShadowComparator } from '../lib/story/shadow';
+  import { resolveProgressSource, progressConsumers } from '../lib/story/progressSource';
 
-  const MODE = String(import.meta.env.PUBLIC_STORY_COORDINATOR ?? 'shadow');
+  const MODE = String(import.meta.env.PUBLIC_STORY_COORDINATOR ?? 'on');
   const w = window as unknown as Record<string, unknown>;
 
   // Everything is guarded: the coordinator must never be able to break the frozen experiences
   // (Astro bundles page scripts together).
   try {
     if (MODE !== 'off') {
-      const coordinator = createStoryCoordinator();
+      const coordinator = getStoryCoordinator();
       const debug = new URLSearchParams(window.location.search).has('story-debug');
-      // Shadow comparison runs in dev, with ?story-debug, or when QA tooling asks for it.
+      // Comparison runs in dev, with ?story-debug, or when QA tooling asks for it.
       const compare = import.meta.env.DEV || debug || w.__ANGST_STORY_QA__ === true;
       const shadow = compare ? attachShadowComparator(coordinator, { debugAttributes: debug }) : null;
       w.__angstStory = {
         version: STORY_COORDINATOR_VERSION,
         mode: MODE,
+        progressSource: resolveProgressSource(),
+        consumers: () => [...progressConsumers().values()].map((c) => ({ ...c, last: c.last && { ...c.last } })),
         getSnapshot: coordinator.getSnapshot,
         getDiagnostics: coordinator.getDiagnostics,
         subscribe: coordinator.subscribe,

@@ -60,7 +60,8 @@ import PhysicalWorldCanvas from './PhysicalWorldCanvas.tsx';
 </script>
 
 <script>
-  import { createScrollProgress, prefersReducedMotion } from '../../lib/scrollProgress';
+  import { prefersReducedMotion } from '../../lib/scrollProgress';
+  import { subscribeSectionProgress } from '../../lib/story/progressSource';
   import { computeSceneValues } from '../../lib/sceneMaps';
 
   const section = document.querySelector('[data-e02-section]');
@@ -89,7 +90,7 @@ import PhysicalWorldCanvas from './PhysicalWorldCanvas.tsx';
     if (prefersReducedMotion()) {
       apply(1);
     } else {
-      createScrollProgress(section, (state) => apply(state.progress));
+      subscribeSectionProgress('e02-overlay', 'e02', section, (state) => apply(state.progress));
     }
   }
 </script>

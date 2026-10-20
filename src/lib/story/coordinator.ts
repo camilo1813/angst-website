@@ -1,20 +1,26 @@
-// Shared story coordinator — RUNTIME (P1: SHADOW MODE).
+// Shared story coordinator — RUNTIME (P2A: PROGRESS SOURCE OF TRUTH).
 //
 // One passive scroll listener, one resize listener, one ResizeObserver; work is scheduled
 // in a single requestAnimationFrame only when something changed (no perpetual loop).
 // It measures the page once, derives E02/E03 progress + semantic descriptors and publishes
-// immutable snapshots. In P1 NOTHING renders from it: E02/E03 keep their own controllers.
+// immutable snapshots.
+//
+// P2A: E02/E03 consumers receive their normalized progress from here via subscribeSection()
+// (see progressSource.ts), with the same ScrollProgressState contract and emission rules as
+// the legacy per-section controller (scrollProgress.createScrollProgress), which remains as
+// a QA rollback path. Rendering is still owned by E02/E03.
 //
 // Exposed for QA/debugging (non-visual): window.__angstStory
 
 import { computeSceneValues } from '../sceneMaps';
+import { SCROLL_IDLE_MS, PROGRESS_EMIT_THRESHOLD, type ScrollProgressState } from '../scrollProgress';
 import {
   type SectionGeometry, type ViewportState, type Segment,
   sectionProgress, segmentAt, sectionNear, progressSensitivity,
 } from './geometry';
 import { describe, type SemanticDescriptor } from './semantics';
 
-export const STORY_COORDINATOR_VERSION = 'p1-shadow-1';
+export const STORY_COORDINATOR_VERSION = 'p2a-progress-1';
 
 export interface StorySnapshot {
   version: string;
@@ -24,6 +30,8 @@ export interface StorySnapshot {
   sections: { e01: SectionGeometry; e02: SectionGeometry; e03: SectionGeometry };
   progress: { e02: number; e03: number };
   near: { e02: boolean; e03: boolean };
+  /** True until SCROLL_IDLE_MS after the last scroll event (same rule as the legacy controller). */
+  scrolling: boolean;
   segment: Segment;
   activeSection: 'e01' | 'e02' | 'e03' | null;
   semantic: SemanticDescriptor;
@@ -40,11 +48,21 @@ export interface StoryDiagnostics {
   measures: number;
   frames: number;
   resizes: number;
+  /** ScrollProgressState emissions delivered to section subscribers (E02/E03 consumers). */
+  sectionDeliveries: number;
+  sectionSubscribers: number;
   /** Semantic label changed by a viewport resize while scrollY stayed constant. */
   resizeInducedSemanticFlips: Array<{ from: string; to: string; innerHeight: [number, number]; scrollY: number }>;
 }
 
 type Listener = (s: StorySnapshot) => void;
+export type StorySectionId = 'e02' | 'e03';
+
+interface SectionSubscription {
+  id: StorySectionId;
+  listener: (state: ScrollProgressState) => void;
+  last: ScrollProgressState | null;
+}
 
 const MOBILE_QUERY = '(max-width: 640px)';
 const RM_QUERY = '(prefers-reduced-motion: reduce)';
@@ -77,7 +95,10 @@ export function createStoryCoordinator() {
   let needsMeasure = true;
   let idleTimer: number | null = null;
   let lastIH = window.innerHeight;
-  const diagnostics: StoryDiagnostics = { measures: 0, frames: 0, resizes: 0, resizeInducedSemanticFlips: [] };
+  let scrolling = false;
+  let scrollIdleTimer: number | null = null;
+  const sectionSubs = new Set<SectionSubscription>();
+  const diagnostics: StoryDiagnostics = { measures: 0, frames: 0, resizes: 0, sectionDeliveries: 0, sectionSubscribers: 0, resizeInducedSemanticFlips: [] };
 
   const measure = () => {
     const e01 = measureSection('#the-void', 'e01');
@@ -116,6 +137,7 @@ export function createStoryCoordinator() {
       sections,
       progress: { e02: p02, e03: p03 },
       near: { e02: sectionNear(vp.scrollY, sections.e02, ih), e03: sectionNear(vp.scrollY, sections.e03, ih) },
+      scrolling,
       segment,
       activeSection: segment === 'e01' ? 'e01' : segment === 'e02' ? 'e02' : segment === 'e03' ? 'e03' : null,
       semantic,
@@ -125,6 +147,30 @@ export function createStoryCoordinator() {
         flipMarginPx: null,
       },
     };
+  };
+
+  // Emission rules mirror scrollProgress.createScrollProgress exactly:
+  //  - nearness change → emit;
+  //  - while near, progress moved by > PROGRESS_EMIT_THRESHOLD since the last emission → emit;
+  //  - scroll-idle (isScrolling true → false) → emit, even when not near;
+  //  - isScrolling turning true is NOT emitted on its own; it rides along with the next emission.
+  // While a section is not near, its progress is not re-emitted (the legacy rAF loop is paused then).
+  const deliver = (sub: SectionSubscription, s: StorySnapshot) => {
+    const near = s.near[sub.id];
+    const p = s.progress[sub.id];
+    const last = sub.last;
+    const nearChanged = !last || last.isNear !== near;
+    const moved = !!last && near && Math.abs(p - last.progress) > PROGRESS_EMIT_THRESHOLD;
+    const idled = !!last && last.isScrolling && !s.scrolling;
+    if (!nearChanged && !moved && !idled) return;
+    const state: ScrollProgressState = {
+      progress: nearChanged || moved ? p : last!.progress,
+      isNear: near,
+      isScrolling: s.scrolling,
+    };
+    sub.last = state;
+    diagnostics.sectionDeliveries++;
+    try { sub.listener({ ...state }); } catch { /* a consumer must never break the coordinator */ }
   };
 
   const publish = () => {
@@ -139,6 +185,7 @@ export function createStoryCoordinator() {
     }
     lastIH = next.viewport.innerHeight;
     snapshot = next;
+    sectionSubs.forEach((sub) => deliver(sub, next));
     listeners.forEach((l) => { try { l(next); } catch { /* listeners must never break the page */ } });
     scheduleIdle();
   };
@@ -164,10 +211,17 @@ export function createStoryCoordinator() {
   };
 
   const schedule = () => { if (rafId === null) rafId = window.requestAnimationFrame(publish); };
+  const publishNow = () => { if (rafId !== null) { window.cancelAnimationFrame(rafId); rafId = null; } publish(); };
   const remeasure = () => { needsMeasure = true; schedule(); };
   const onResize = () => { diagnostics.resizes++; remeasure(); };
+  const onScroll = () => {
+    scrolling = true;
+    if (scrollIdleTimer !== null) window.clearTimeout(scrollIdleTimer);
+    scrollIdleTimer = window.setTimeout(() => { scrollIdleTimer = null; scrolling = false; schedule(); }, SCROLL_IDLE_MS);
+    schedule();
+  };
 
-  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', onResize, { passive: true });
   window.visualViewport?.addEventListener('resize', onResize, { passive: true });
   mobileMq.addEventListener('change', remeasure);
@@ -183,12 +237,24 @@ export function createStoryCoordinator() {
     getSnapshot: () => snapshot,
     getDiagnostics: () => diagnostics,
     subscribe(l: Listener) { listeners.add(l); if (snapshot) l(snapshot); return () => listeners.delete(l); },
+    /**
+     * P2A progress authority: subscribe a section consumer. Delivers ScrollProgressState with the same
+     * contract as scrollProgress.createScrollProgress (an initial reading immediately, then changes).
+     */
+    subscribeSection(id: StorySectionId, listener: (state: ScrollProgressState) => void) {
+      const sub: SectionSubscription = { id, listener, last: null };
+      sectionSubs.add(sub);
+      diagnostics.sectionSubscribers = sectionSubs.size;
+      // Fresh synchronous reading, like the legacy controller's immediate initial reading.
+      publishNow();
+      return () => { sectionSubs.delete(sub); diagnostics.sectionSubscribers = sectionSubs.size; };
+    },
     /** Force a synchronous measure + publish (QA). */
-    refresh() { needsMeasure = true; if (rafId !== null) { window.cancelAnimationFrame(rafId); } publish(); return snapshot; },
+    refresh() { needsMeasure = true; publishNow(); return snapshot; },
     /** Pure helper exposed for QA: what E02 scene values the coordinator implies right now. */
     impliedE02Scene: () => (snapshot ? computeSceneValues(snapshot.mode.reducedMotion ? 1 : snapshot.progress.e02, snapshot.mode.isMobile) : null),
     destroy() {
-      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onResize);
       window.visualViewport?.removeEventListener('resize', onResize);
       mobileMq.removeEventListener('change', remeasure);
@@ -196,9 +262,25 @@ export function createStoryCoordinator() {
       ro?.disconnect();
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       if (idleTimer !== null) window.clearTimeout(idleTimer);
+      if (scrollIdleTimer !== null) window.clearTimeout(scrollIdleTimer);
       listeners.clear();
+      sectionSubs.clear();
     },
   };
 }
 
 export type StoryCoordinator = ReturnType<typeof createStoryCoordinator>;
+
+// One coordinator per page. Consumers (Astro page scripts and React islands, which load from
+// separate chunks) all resolve the same instance; it is also pinned on window so that a
+// duplicated module instance could never create a second coordinator.
+const INSTANCE_KEY = '__angstStoryCoordinatorInstance';
+export function getStoryCoordinator(): StoryCoordinator {
+  const w = window as unknown as Record<string, StoryCoordinator | undefined>;
+  let c = w[INSTANCE_KEY];
+  if (!c) {
+    c = createStoryCoordinator();
+    Object.defineProperty(window, INSTANCE_KEY, { value: c, configurable: true, enumerable: false });
+  }
+  return c;
+}

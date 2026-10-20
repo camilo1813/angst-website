@@ -1,10 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import {
-  createScrollProgress,
-  prefersReducedMotion,
-  type ScrollProgressState,
-} from '../../lib/scrollProgress';
+import { prefersReducedMotion, type ScrollProgressState } from '../../lib/scrollProgress';
+import { subscribeSectionProgress } from '../../lib/story/progressSource';
 import { computeSceneValues, getCameraProfile } from '../../lib/sceneMaps';
 import { projectScreenPointToWorld } from '../../lib/signalAlignment';
 import { DESKTOP_BUDGET, MOBILE_BUDGET } from '../../lib/pointBudgets';
@@ -84,7 +81,7 @@ export default function PhysicalWorldCanvas() {
       return () => observer.disconnect();
     }
 
-    const handle = createScrollProgress(sectionEl, setScrollState);
+    const handle = subscribeSectionProgress('e02-canvas', 'e02', sectionEl, setScrollState);
     return () => handle.destroy();
   }, [reducedMotion]);
 
