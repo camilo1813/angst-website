@@ -3,8 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { prefersReducedMotion, type ScrollProgressState } from '../../lib/scrollProgress';
 import { subscribeSectionProgress } from '../../lib/story/progressSource';
 import { computeSceneValues, getCameraProfile } from '../../lib/sceneMaps';
-import { projectScreenPointToWorld } from '../../lib/signalAlignment';
-import { DESKTOP_BUDGET, MOBILE_BUDGET } from '../../lib/pointBudgets';
+import { computeSignalAnchor, canvasDpr, ambientAmplitude as computeAmbientAmplitude, pointBudgetFor } from '../../lib/worldRuntime';
 import { buildExperience03Scene } from '../../lib/experience03Maps';
 import PhysicalWorldScene from '../experience-02/PhysicalWorldScene';
 
@@ -88,39 +87,21 @@ export default function Experience03Controller() {
     // to place this world-space point — guarantees the signal dot picks
     // up exactly where E02's approved final frame left it, without any
     // cross-component state sharing.
-    const anchorEl = document.querySelector('[data-e02-signal-anchor]');
-    if (!anchorEl) return;
-    const rect = anchorEl.getBoundingClientRect();
-    const profile = getCameraProfile(isMobile);
-    const world = projectScreenPointToWorld(
-      rect.left + rect.width / 2,
-      rect.top + rect.height / 2,
-      window.innerWidth,
-      window.innerHeight,
-      profile.start,
-      profile.lookAtStart,
-      profile.fov,
-      9,
-    );
+    const world = computeSignalAnchor(isMobile);
+    if (!world) return;
     setSignalAnchor(world);
   }, [isMobile]);
 
   const cameraProfile = useMemo(() => getCameraProfile(isMobile), [isMobile]);
 
-  const dpr = useMemo(() => {
-    if (typeof window === 'undefined') return 1;
-    const cap = isMobile ? 1.25 : 1.5;
-    return Math.min(window.devicePixelRatio || 1, cap);
-  }, [isMobile]);
+  const dpr = useMemo(() => canvasDpr(isMobile), [isMobile]);
 
-  const budget = isMobile ? MOBILE_BUDGET : DESKTOP_BUDGET;
+  const budget = pointBudgetFor(isMobile);
 
   const active = scrollState.isNear && tabVisible;
   const baseScene = useMemo(() => computeSceneValues(1, isMobile), [isMobile]);
   const scene = buildExperience03Scene(baseScene, scrollState.progress);
-  const ambientAmplitude = reducedMotion
-    ? 0
-    : baseScene.settleAmbient * (scrollState.isScrolling ? 1 : 0.15);
+  const ambientAmplitude = computeAmbientAmplitude(baseScene.settleAmbient, reducedMotion, scrollState.isScrolling);
 
   if (!webglOk || !signalAnchor) {
     return <div ref={rootRef} className="e03-canvas-root" aria-hidden="true" />;

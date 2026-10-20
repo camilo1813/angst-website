@@ -1,15 +1,18 @@
 ---
-// Shared story coordinator — P2A: PROGRESS SOURCE OF TRUTH.
+// Shared story coordinator — P2A: PROGRESS SOURCE OF TRUTH · P2B: persistent world (shadow / QA only).
 // Renders no markup. E02/E03 consumers obtain their progress through lib/story/progressSource
 // (coordinator by default; legacy per-section controllers as a temporary QA rollback).
 // This script exposes the coordinator for QA and attaches the (reverse) comparator on request.
 // Disable the coordinator entirely with PUBLIC_STORY_COORDINATOR=off (forces legacy progress).
+// P2B: ?story-world=shadow|visible lazily mounts the persistent world (see lib/story/worldMode.ts);
+// the default ('off') loads nothing and creates no WebGL context.
 ---
 
 <script>
   import { getStoryCoordinator, STORY_COORDINATOR_VERSION } from '../lib/story/coordinator';
   import { attachShadowComparator } from '../lib/story/shadow';
   import { resolveProgressSource, progressConsumers } from '../lib/story/progressSource';
+  import { resolveWorldMode } from '../lib/story/worldMode';
 
   const MODE = String(import.meta.env.PUBLIC_STORY_COORDINATOR ?? 'on');
   const w = window as unknown as Record<string, unknown>;
@@ -33,7 +36,17 @@
         subscribe: coordinator.subscribe,
         refresh: coordinator.refresh,
         shadow,
+        worldMode: 'off',
+        world: null,
       };
+      const worldMode = resolveWorldMode();
+      if (worldMode !== 'off') {
+        const story = w.__angstStory as Record<string, unknown>;
+        story.worldMode = worldMode;
+        import('./persistent-world/mountPersistentWorld')
+          .then((m) => { story.world = m.mountPersistentWorld(coordinator, worldMode); })
+          .catch((err) => { w.__angstStoryError = String(err); });
+      }
     }
   } catch (err) {
     w.__angstStoryError = String(err);

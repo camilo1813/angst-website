@@ -14,25 +14,32 @@
 
 import { computeSceneValues } from '../sceneMaps';
 import { SCROLL_IDLE_MS, PROGRESS_EMIT_THRESHOLD, type ScrollProgressState } from '../scrollProgress';
+import { MOBILE_BREAKPOINT_QUERY } from '../breakpoints';
 import {
   type SectionGeometry, type ViewportState, type Segment,
   sectionProgress, segmentAt, sectionNear, progressSensitivity,
 } from './geometry';
 import { describe, type SemanticDescriptor } from './semantics';
 
-export const STORY_COORDINATOR_VERSION = 'p2a-progress-1';
+export const STORY_COORDINATOR_VERSION = 'p2b-world-1';
 
 export interface StorySnapshot {
   version: string;
   frame: number;
   viewport: ViewportState;
-  mode: { isMobile: boolean; reducedMotion: boolean; webgl: boolean };
+  /** Runtime mode, owned here for every NEW consumer (the persistent world). Legacy canvases keep their own copies. */
+  mode: { isMobile: boolean; reducedMotion: boolean; webgl: boolean; tabVisible: boolean; dpr: number };
   sections: { e01: SectionGeometry; e02: SectionGeometry; e03: SectionGeometry };
   progress: { e02: number; e03: number };
   near: { e02: boolean; e03: boolean };
   /** True until SCROLL_IDLE_MS after the last scroll event (same rule as the legacy controller). */
   scrolling: boolean;
   segment: Segment;
+  /**
+   * Render eligibility, same rule as the legacy canvases (`active = isNear && tabVisible`, WebGL
+   * available): e02/e03 per section, `world` for one persistent canvas spanning both.
+   */
+  renderEligible: { e02: boolean; e03: boolean; world: boolean };
   activeSection: 'e01' | 'e02' | 'e03' | null;
   semantic: SemanticDescriptor;
   /** Viewport-height dependence of the current state (see geometry.progressSensitivity). */
@@ -64,7 +71,7 @@ interface SectionSubscription {
   last: ScrollProgressState | null;
 }
 
-const MOBILE_QUERY = '(max-width: 640px)';
+const MOBILE_QUERY = MOBILE_BREAKPOINT_QUERY;
 const RM_QUERY = '(prefers-reduced-motion: reduce)';
 
 function measureSection(sel: string, id: SectionGeometry['id']): SectionGeometry | null {
@@ -125,6 +132,9 @@ export function createStoryCoordinator() {
     };
     const isMobile = mobileMq.matches;
     const reducedMotion = rmMq.matches;
+    const webgl = !document.documentElement.classList.contains('no-webgl');
+    const tabVisible = document.visibilityState === 'visible';
+    const near = { e02: sectionNear(vp.scrollY, sections.e02, ih), e03: sectionNear(vp.scrollY, sections.e03, ih) };
     const p02 = sectionProgress(vp.scrollY, sections.e02, ih);
     const p03 = sectionProgress(vp.scrollY, sections.e03, ih);
     const segment = segmentAt(vp.scrollY, sections.e02, sections.e03, ih);
@@ -133,12 +143,17 @@ export function createStoryCoordinator() {
       version: STORY_COORDINATOR_VERSION,
       frame: ++diagnostics.frames,
       viewport: vp,
-      mode: { isMobile, reducedMotion, webgl: !document.documentElement.classList.contains('no-webgl') },
+      mode: { isMobile, reducedMotion, webgl, tabVisible, dpr: window.devicePixelRatio || 1 },
       sections,
       progress: { e02: p02, e03: p03 },
-      near: { e02: sectionNear(vp.scrollY, sections.e02, ih), e03: sectionNear(vp.scrollY, sections.e03, ih) },
+      near,
       scrolling,
       segment,
+      renderEligible: {
+        e02: webgl && tabVisible && near.e02,
+        e03: webgl && tabVisible && near.e03,
+        world: webgl && tabVisible && (near.e02 || near.e03),
+      },
       activeSection: segment === 'e01' ? 'e01' : segment === 'e02' ? 'e02' : segment === 'e03' ? 'e03' : null,
       semantic,
       viewportDependence: {
@@ -226,6 +241,8 @@ export function createStoryCoordinator() {
   window.visualViewport?.addEventListener('resize', onResize, { passive: true });
   mobileMq.addEventListener('change', remeasure);
   rmMq.addEventListener('change', schedule);
+  // Synchronous: rAF is paused in a hidden tab, so a scheduled publish would never report 'hidden'.
+  document.addEventListener('visibilitychange', publishNow);
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(remeasure) : null;
   ['#the-void', '[data-e02-section]', '[data-e03-section]'].forEach((sel) => { const el = document.querySelector(sel); if (el && ro) ro.observe(el); });
   window.addEventListener('load', remeasure, { once: true });
@@ -259,6 +276,7 @@ export function createStoryCoordinator() {
       window.visualViewport?.removeEventListener('resize', onResize);
       mobileMq.removeEventListener('change', remeasure);
       rmMq.removeEventListener('change', schedule);
+      document.removeEventListener('visibilitychange', publishNow);
       ro?.disconnect();
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       if (idleTimer !== null) window.clearTimeout(idleTimer);

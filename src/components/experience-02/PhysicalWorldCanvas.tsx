@@ -3,8 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { prefersReducedMotion, type ScrollProgressState } from '../../lib/scrollProgress';
 import { subscribeSectionProgress } from '../../lib/story/progressSource';
 import { computeSceneValues, getCameraProfile } from '../../lib/sceneMaps';
-import { projectScreenPointToWorld } from '../../lib/signalAlignment';
-import { DESKTOP_BUDGET, MOBILE_BUDGET } from '../../lib/pointBudgets';
+import { computeSignalAnchor, canvasDpr, ambientAmplitude as computeAmbientAmplitude, pointBudgetFor } from '../../lib/worldRuntime';
 import PhysicalWorldScene from './PhysicalWorldScene';
 
 const MOBILE_BREAKPOINT = '(max-width: 640px)';
@@ -86,38 +85,20 @@ export default function PhysicalWorldCanvas() {
   }, [reducedMotion]);
 
   useEffect(() => {
-    const anchorEl = document.querySelector('[data-e02-signal-anchor]');
-    if (!anchorEl) return;
-    const rect = anchorEl.getBoundingClientRect();
-    const profile = getCameraProfile(isMobile);
-    const world = projectScreenPointToWorld(
-      rect.left + rect.width / 2,
-      rect.top + rect.height / 2,
-      window.innerWidth,
-      window.innerHeight,
-      profile.start,
-      profile.lookAtStart,
-      profile.fov,
-      9,
-    );
+    const world = computeSignalAnchor(isMobile);
+    if (!world) return;
     setSignalAnchor(world);
   }, [isMobile]);
 
   const cameraProfile = useMemo(() => getCameraProfile(isMobile), [isMobile]);
 
-  const dpr = useMemo(() => {
-    if (typeof window === 'undefined') return 1;
-    const cap = isMobile ? 1.25 : 1.5;
-    return Math.min(window.devicePixelRatio || 1, cap);
-  }, [isMobile]);
+  const dpr = useMemo(() => canvasDpr(isMobile), [isMobile]);
 
-  const budget = isMobile ? MOBILE_BUDGET : DESKTOP_BUDGET;
+  const budget = pointBudgetFor(isMobile);
 
   const active = scrollState.isNear && tabVisible;
   const scene = computeSceneValues(scrollState.progress, isMobile);
-  const ambientAmplitude = reducedMotion
-    ? 0
-    : scene.settleAmbient * (scrollState.isScrolling ? 1 : 0.15);
+  const ambientAmplitude = computeAmbientAmplitude(scene.settleAmbient, reducedMotion, scrollState.isScrolling);
 
   // The reveal-gate class only ever applies on the reduced-motion path —
   // normal scroll-driven mode relies entirely on the scene's own
