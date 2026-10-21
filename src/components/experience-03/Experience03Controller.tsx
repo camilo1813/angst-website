@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { prefersReducedMotion, type ScrollProgressState } from '../../lib/scrollProgress';
 import { subscribeSectionProgress } from '../../lib/story/progressSource';
+import { legacyWorldCanvasesEnabled } from '../../lib/story/worldMode';
 import { computeSceneValues, getCameraProfile } from '../../lib/sceneMaps';
 import { computeSignalAnchor, canvasDpr, ambientAmplitude as computeAmbientAmplitude, pointBudgetFor } from '../../lib/worldRuntime';
 import { buildExperience03Scene } from '../../lib/experience03Maps';
@@ -47,8 +48,12 @@ export default function Experience03Controller() {
     isScrolling: false,
   });
   const [tabVisible, setTabVisible] = useState(true);
+  // P3: in the public 'persistent' renderer mode this island renders only its (empty) canvas slot —
+  // the one persistent world is composited inside it. 'legacy' / 'shadow' modes render this canvas.
+  const legacyCanvas = useMemo(() => legacyWorldCanvasesEnabled(), []);
 
   useEffect(() => {
+    if (!legacyCanvas) return;
     setWebglOk(supportsWebGL());
     setReducedMotion(prefersReducedMotion());
 
@@ -78,6 +83,7 @@ export default function Experience03Controller() {
     // Reduced motion still tracks real scroll (no autoplay, no timers) —
     // only the ambient per-frame motion is suppressed below. Scroll still
     // drives straightforward category opacity transitions per spec.
+    if (!legacyCanvas) return;
     const handle = subscribeSectionProgress('e03-canvas', 'e03', sectionEl, setScrollState);
     return () => handle.destroy();
   }, []);
@@ -87,6 +93,7 @@ export default function Experience03Controller() {
     // to place this world-space point — guarantees the signal dot picks
     // up exactly where E02's approved final frame left it, without any
     // cross-component state sharing.
+    if (!legacyCanvas) return;
     const world = computeSignalAnchor(isMobile);
     if (!world) return;
     setSignalAnchor(world);
@@ -103,7 +110,7 @@ export default function Experience03Controller() {
   const scene = buildExperience03Scene(baseScene, scrollState.progress);
   const ambientAmplitude = computeAmbientAmplitude(baseScene.settleAmbient, reducedMotion, scrollState.isScrolling);
 
-  if (!webglOk || !signalAnchor) {
+  if (!legacyCanvas || !webglOk || !signalAnchor) {
     return <div ref={rootRef} className="e03-canvas-root" aria-hidden="true" />;
   }
 

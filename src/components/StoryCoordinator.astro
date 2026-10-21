@@ -1,11 +1,12 @@
 ---
-// Shared story coordinator — P2A: PROGRESS SOURCE OF TRUTH · P2B: persistent world (shadow / QA only).
+// Shared story coordinator — P2A: PROGRESS SOURCE OF TRUTH · P3: owns the ONE persistent physical-world renderer.
 // Renders no markup. E02/E03 consumers obtain their progress through lib/story/progressSource
 // (coordinator by default; legacy per-section controllers as a temporary QA rollback).
 // This script exposes the coordinator for QA and attaches the (reverse) comparator on request.
 // Disable the coordinator entirely with PUBLIC_STORY_COORDINATOR=off (forces legacy progress).
-// P2B: ?story-world=shadow|visible lazily mounts the persistent world (see lib/story/worldMode.ts);
-// the default ('off') loads nothing and creates no WebGL context.
+// P3: renderer mode (lib/story/worldMode.ts) — 'persistent' (default): one persistent canvas renders
+// E02 + E03; 'legacy' (?story-world=legacy rollback): the original two canvases, nothing persistent
+// is loaded; 'shadow' (QA): legacy visible + hidden on-demand persistent world.
 ---
 
 <script>
@@ -36,11 +37,11 @@
         subscribe: coordinator.subscribe,
         refresh: coordinator.refresh,
         shadow,
-        worldMode: 'off',
+        worldMode: resolveWorldMode(),
         world: null,
       };
       const worldMode = resolveWorldMode();
-      if (worldMode !== 'off') {
+      if (worldMode === 'persistent' || worldMode === 'shadow') {
         const story = w.__angstStory as Record<string, unknown>;
         story.worldMode = worldMode;
         import('./persistent-world/mountPersistentWorld')

@@ -91,3 +91,16 @@ export function progressSensitivity(scrollY: number, s: SectionGeometry, vp: Vie
   const perPxViewport = (p(svh + 1) - p(svh - 1)) / 2;
   return { perPxInnerHeight, perPxViewport };
 }
+
+/**
+ * P3: viewport-relative top of a section's sticky stage (height `stageHeight`, i.e. one 100svh box),
+ * derived from the coordinator's cached geometry — no layout read. Positive while the stage is still
+ * below the viewport top (section entering), 0 while pinned, negative once the section's end has
+ * pushed the stage up (unpin travel / leaving).
+ */
+export function stageTop(scrollY: number, s: SectionGeometry, stageHeight: number): number {
+  if (scrollY <= s.top) return s.top - scrollY;
+  const pinnedEnd = s.top + Math.max(0, s.height - stageHeight);
+  if (scrollY <= pinnedEnd) return 0;
+  return pinnedEnd - scrollY;
+}

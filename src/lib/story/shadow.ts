@@ -21,6 +21,7 @@ import { computeExperience03State, computeFallbackBucket } from '../experience03
 import { computeSectionProgress, PROGRESS_EMIT_THRESHOLD } from '../scrollProgress';
 import type { StoryCoordinator, StorySnapshot, StorySectionId } from './coordinator';
 import { progressConsumers, resolveProgressSource } from './progressSource';
+import { resolveWorldMode } from './worldMode';
 
 const EPS = 1e-4;
 const GEOMETRY_EPS = 1e-6;
@@ -115,10 +116,18 @@ export function attachShadowComparator(coord: StoryCoordinator, opts: { debugAtt
     // ---- consumers: what each E02/E03 consumer last received
     if (consumersDue) {
       const registry = progressConsumers();
+      // Expected consumers depend on the renderer mode (P3): legacy canvases in 'legacy'/'shadow',
+      // the one persistent world's two progress streams in 'persistent'/'shadow'. The E02 overlay and
+      // legacy E02 canvas do not subscribe under reduced motion (they present p = 1).
+      const wm = resolveWorldMode();
+      const legacyCanvases = wm !== 'persistent';
+      const persistentWorld = wm !== 'legacy'; // strict: a world that failed to mount is a missing channel, not a skip
       const expected: Array<[string, StorySectionId]> = [
-        ...(rm ? [] : ([['e02-overlay', 'e02'], ['e02-canvas', 'e02']] as Array<[string, StorySectionId]>)),
+        ...(rm ? [] : ([['e02-overlay', 'e02']] as Array<[string, StorySectionId]>)),
+        ...(!rm && legacyCanvases ? ([['e02-canvas', 'e02']] as Array<[string, StorySectionId]>) : []),
         ['e03-overlay', 'e03'],
-        ['e03-canvas', 'e03'],
+        ...(legacyCanvases ? ([['e03-canvas', 'e03']] as Array<[string, StorySectionId]>) : []),
+        ...(persistentWorld ? ([['world-e02', 'e02'], ['world-e03', 'e03']] as Array<[string, StorySectionId]>) : []),
       ];
       for (const [name, id] of expected) {
         const rec = registry.get(name);

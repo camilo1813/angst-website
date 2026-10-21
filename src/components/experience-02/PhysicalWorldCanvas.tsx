@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { prefersReducedMotion, type ScrollProgressState } from '../../lib/scrollProgress';
 import { subscribeSectionProgress } from '../../lib/story/progressSource';
+import { legacyWorldCanvasesEnabled } from '../../lib/story/worldMode';
 import { computeSceneValues, getCameraProfile } from '../../lib/sceneMaps';
 import { computeSignalAnchor, canvasDpr, ambientAmplitude as computeAmbientAmplitude, pointBudgetFor } from '../../lib/worldRuntime';
 import PhysicalWorldScene from './PhysicalWorldScene';
@@ -38,9 +39,12 @@ export default function PhysicalWorldCanvas() {
   });
   const [tabVisible, setTabVisible] = useState(true);
   const [revealed, setRevealed] = useState(false);
+  // P3: in the public 'persistent' renderer mode this island renders only its (empty) canvas slot —
+  // the one persistent world is composited inside it. 'legacy' / 'shadow' modes render this canvas.
+  const legacyCanvas = useMemo(() => legacyWorldCanvasesEnabled(), []);
 
   useEffect(() => {
-    setWebglOk(supportsWebGL());
+    if (legacyCanvas) setWebglOk(supportsWebGL()); // the probe creates a throwaway context; not needed when not rendering
     setReducedMotion(prefersReducedMotion());
 
     const motionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -80,11 +84,13 @@ export default function PhysicalWorldCanvas() {
       return () => observer.disconnect();
     }
 
+    if (!legacyCanvas) return;
     const handle = subscribeSectionProgress('e02-canvas', 'e02', sectionEl, setScrollState);
     return () => handle.destroy();
   }, [reducedMotion]);
 
   useEffect(() => {
+    if (!legacyCanvas) return;
     const world = computeSignalAnchor(isMobile);
     if (!world) return;
     setSignalAnchor(world);
@@ -104,6 +110,11 @@ export default function PhysicalWorldCanvas() {
   // normal scroll-driven mode relies entirely on the scene's own
   // progress-derived opacities and should never be independently faded.
   const revealClass = reducedMotion && !revealed ? ' rm-pending' : '';
+
+  if (!legacyCanvas) {
+    // The slot keeps the reduced-motion reveal gate, so the persistent world inside it fades in exactly as before.
+    return <div ref={rootRef} className={`e02-canvas-root${revealClass}`} aria-hidden="true" />;
+  }
 
   if (!webglOk || !signalAnchor) {
     return <div ref={rootRef} className="e02-canvas-root" aria-hidden="true" />;

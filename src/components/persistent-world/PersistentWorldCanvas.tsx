@@ -2,18 +2,20 @@ import { useEffect, useMemo, useState } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import type { ScrollProgressState } from '../../lib/scrollProgress';
 import type { StoryCoordinator, StorySnapshot } from '../../lib/story/coordinator';
+import { subscribeSectionProgress } from '../../lib/story/progressSource';
 import { computePersistentWorldState, type PersistentWorldState } from '../../lib/story/persistentWorld';
 import { computeSignalAnchor, canvasDpr } from '../../lib/worldRuntime';
 import PhysicalWorldScene from '../experience-02/PhysicalWorldScene';
 
 /**
- * P2B — ONE persistent physical-world canvas (shadow / QA only; never mounted in public mode).
+ * The ONE persistent physical-world canvas (P3: the visible renderer in the public default mode).
  *
- * It renders the SAME PhysicalWorldScene (same Life/Machine/Environment fields, grid, structural
- * points, signal anchor, bridge and connection) the legacy E02/E03 canvases render, from the SAME
+ * It renders the SAME PhysicalWorldScene (Life / Machine / Environment fields, grid, structural
+ * points, signal anchor, bridge, connection) the legacy E02/E03 canvases rendered, from the SAME
  * maps, with ONE camera driven by the scene's own CameraRig. Every input comes from the story
- * coordinator: progress streams (the same emissions the legacy consumers receive), mode
- * (mobile / reduced motion / WebGL / tab visibility), segment and render eligibility.
+ * coordinator: progress (through the one P2A progress source — the same emissions every other
+ * consumer receives), mode (mobile / reduced motion / WebGL / tab visibility), segment and render
+ * eligibility. No scroll controller, no layout reads of its own.
  */
 
 const INITIAL: ScrollProgressState = { progress: 0, isNear: false, isScrolling: false };
@@ -26,10 +28,14 @@ export interface PersistentWorldReport {
   segment: string;
 }
 
-/** Invalidates on every state change when rendering on demand, and reports the live renderer for QA. */
-function WorldProbe({ stamp, onGl }: { stamp: unknown; onGl: (gl: unknown, camera: unknown) => void }) {
-  const { gl, camera, invalidate } = useThree();
-  useEffect(() => { onGl(gl, camera); }, [gl, camera, onGl]);
+/** Mount ledger (QA): proves the world is built once and never rebuilt across E02 → E03. */
+export interface WorldLedger { roots: number; canvasMounts: number; sceneMounts: number; contextsCreated: number; slotMoves: number }
+
+/** Inside the Canvas: reports the live renderer/camera/scene, counts scene-subtree mounts, invalidates on demand. */
+function WorldProbe({ stamp, ledger, onGl }: { stamp: unknown; ledger: WorldLedger; onGl: (gl: unknown, camera: unknown, scene: unknown) => void }) {
+  const { gl, camera, scene, invalidate } = useThree();
+  useEffect(() => { ledger.sceneMounts++; }, [ledger]);
+  useEffect(() => { onGl(gl, camera, scene); }, [gl, camera, scene, onGl]);
   useEffect(() => { invalidate(); }, [stamp, invalidate]);
   return null;
 }
@@ -37,29 +43,37 @@ function WorldProbe({ stamp, onGl }: { stamp: unknown; onGl: (gl: unknown, camer
 export default function PersistentWorldCanvas({
   coordinator,
   mode,
+  ledger,
   onReport,
   onGl,
 }: {
   coordinator: StoryCoordinator;
-  mode: 'shadow' | 'visible';
+  mode: 'persistent' | 'shadow';
+  ledger: WorldLedger;
   onReport: (r: PersistentWorldReport) => void;
-  onGl: (gl: unknown, camera: unknown) => void;
+  onGl: (gl: unknown, camera: unknown, scene: unknown) => void;
 }) {
   const [snap, setSnap] = useState<StorySnapshot | null>(() => coordinator.getSnapshot());
   const [e02, setE02] = useState<ScrollProgressState>(INITIAL);
   const [e03, setE03] = useState<ScrollProgressState>(INITIAL);
 
+  useEffect(() => { ledger.canvasMounts++; }, [ledger]);
+
   useEffect(() => {
     const offSnap = coordinator.subscribe(setSnap);
-    const offE02 = coordinator.subscribeSection('e02', setE02);
-    const offE03 = coordinator.subscribeSection('e03', setE03);
-    return () => { offSnap(); offE02(); offE03(); };
+    const e02El = document.querySelector('[data-e02-section]');
+    const e03El = document.querySelector('[data-e03-section]');
+    const h02 = e02El ? subscribeSectionProgress('world-e02', 'e02', e02El, setE02) : null;
+    const h03 = e03El ? subscribeSectionProgress('world-e03', 'e03', e03El, setE03) : null;
+    return () => { offSnap(); h02?.destroy(); h03?.destroy(); };
   }, [coordinator]);
 
   const isMobile = snap?.mode.isMobile ?? false;
   const [signalAnchor, setSignalAnchor] = useState<[number, number, number] | null>(null);
   useEffect(() => {
-    // Same projection, same element, same trigger (mount + mobile breakpoint change) as the legacy canvases.
+    // Same projection, same element, same trigger (mount + mobile breakpoint change) as the legacy
+    // canvases. The persistent world mounts once the E02/E03 islands have hydrated — the moment the
+    // legacy canvases computed theirs — so the inherited (off-screen) anchor is reproduced.
     const world = computeSignalAnchor(isMobile);
     if (world) setSignalAnchor(world);
   }, [isMobile]);
@@ -69,9 +83,9 @@ export default function PersistentWorldCanvas({
     [snap, isMobile, e02, e03],
   );
   const dpr = useMemo(() => canvasDpr(isMobile), [isMobile]);
-  // Shadow: render only when the state changes (no continuous loop, nothing composited).
-  // Visible QA: same rule as the legacy canvases (continuous while eligible, for ambient motion parity).
-  const frameloop: 'always' | 'never' | 'demand' = mode === 'visible' ? (snap?.renderEligible.world ? 'always' : 'never') : 'demand';
+  // Visible: the legacy rule (continuous while eligible — exact ambient-motion parity; paused when
+  // the tab is hidden or the story region is off-screen). Shadow (QA): only on state change.
+  const frameloop: 'always' | 'never' | 'demand' = mode === 'persistent' ? (snap?.renderEligible.world ? 'always' : 'never') : 'demand';
   const initialCamera = useMemo(() => state?.scene.cameraPosition ?? [0, 0, 10], [state === null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -86,6 +100,7 @@ export default function PersistentWorldCanvas({
       frameloop={frameloop}
       gl={{ alpha: true, antialias: true }}
       camera={{ position: initialCamera as [number, number, number], fov: state.fov, near: 0.1, far: 100 }}
+      onCreated={() => { ledger.contextsCreated++; }}
     >
       <PhysicalWorldScene
         scene={state.scene}
@@ -94,7 +109,7 @@ export default function PersistentWorldCanvas({
         isMobile={state.isMobile}
         pointBudget={state.pointBudget}
       />
-      <WorldProbe stamp={state} onGl={onGl} />
+      <WorldProbe stamp={state} ledger={ledger} onGl={onGl} />
     </Canvas>
   );
 }
