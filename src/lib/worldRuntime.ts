@@ -39,6 +39,44 @@ export function computeSignalAnchor(isMobile: boolean): [number, number, number]
   );
 }
 
+/**
+ * P4 — DETERMINISTIC signal/reference anchor for the persistent world.
+ *
+ * Same projection as computeSignalAnchor (E02 START camera, depth 9), but the screen point is the
+ * anchor node's position in the page's CANONICAL layout — where it is laid out when the document is
+ * at scrollY = 0 — instead of wherever it happens to be on screen at mount time. It is therefore a
+ * pure function of the viewport (width, height, breakpoint) and no longer depends on the scroll
+ * position at mount (reload / restored scroll / deep link) or on mount timing.
+ *
+ *  - Rendered node (> 700 px): x from its live rect (x never depends on scroll); y = the E02
+ *    section's document top + the node's offset inside the (sticky) E02 stage. At scrollY = 0 the
+ *    stage sits unstuck at the section top, so this reproduces exactly the value the legacy
+ *    function returns for a page mounted at the top (every approved golden state).
+ *  - Unrendered node (≤ 700 px: the signal hint is display:none, its rect is all zeros): the legacy
+ *    function projected screen point (0, 0) — the viewport's top-left corner. That value is kept,
+ *    now explicitly, so mobile output is unchanged; it is already scroll-independent.
+ *
+ * In every approved E02/E03 state the resulting anchor stays off-screen (no blue). It defines the
+ * spatial reference only; it adds no E04 semantics.
+ */
+export function computeStableSignalAnchor(isMobile: boolean): [number, number, number] | null {
+  const anchorEl = document.querySelector('[data-e02-signal-anchor]');
+  const stageEl = document.querySelector('.e02-stage');
+  const sectionEl = document.querySelector('[data-e02-section]');
+  if (!anchorEl || !stageEl || !sectionEl) return null;
+  const rect = anchorEl.getBoundingClientRect();
+  let x = 0;
+  let y = 0;
+  if (rect.width > 0 || rect.height > 0) {
+    const stageTopInViewport = stageEl.getBoundingClientRect().top;
+    const sectionTopInDocument = sectionEl.getBoundingClientRect().top + window.scrollY;
+    x = rect.left + rect.width / 2;
+    y = sectionTopInDocument + (rect.top - stageTopInViewport) + rect.height / 2;
+  }
+  const profile = getCameraProfile(isMobile);
+  return projectScreenPointToWorld(x, y, window.innerWidth, window.innerHeight, profile.start, profile.lookAtStart, profile.fov, 9);
+}
+
 /** Device-pixel-ratio cap for world canvases. */
 export function canvasDpr(isMobile: boolean): number {
   if (typeof window === 'undefined') return 1;

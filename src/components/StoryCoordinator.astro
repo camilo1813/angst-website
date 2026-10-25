@@ -13,7 +13,7 @@
   import { getStoryCoordinator, STORY_COORDINATOR_VERSION } from '../lib/story/coordinator';
   import { attachShadowComparator } from '../lib/story/shadow';
   import { resolveProgressSource, progressConsumers } from '../lib/story/progressSource';
-  import { resolveWorldMode } from '../lib/story/worldMode';
+  import { resolveWorldMode, resolveStoryGeometry } from '../lib/story/worldMode';
 
   const MODE = String(import.meta.env.PUBLIC_STORY_COORDINATOR ?? 'on');
   const w = window as unknown as Record<string, unknown>;
@@ -38,6 +38,7 @@
         refresh: coordinator.refresh,
         shadow,
         worldMode: resolveWorldMode(),
+        geometry: resolveStoryGeometry(),
         world: null,
       };
       const worldMode = resolveWorldMode();

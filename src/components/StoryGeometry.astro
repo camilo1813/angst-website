@@ -1,0 +1,80 @@
+---
+// P4 — CONTINUOUS GATEWAY GEOMETRY (page geometry only; no narrative, no visual state change).
+//
+// Placed in index.astro BETWEEN Experience 02 and Experience 03, so it runs after E02's frozen inline
+// WebGL probe (html.no-webgl) and before E03 is parsed: the page's first layout already has its
+// final geometry (no layout shift, no re-measure).
+//
+// 1. Resolves the physical-world renderer mode ONCE, synchronously, and records it on <html>
+//    (data-angst-world). lib/story/worldMode.ts reads this attribute, so there is exactly one
+//    resolver. Precedence (unchanged from P3):
+//      no WebGL → legacy · PUBLIC_STORY_COORDINATOR=off → legacy · ?story-world= ·
+//      window.__ANGST_STORY_WORLD__ · PUBLIC_STORY_WORLD (persistent|legacy) · default persistent
+//
+// 2. Chooses the page geometry (data-angst-geometry):
+//      continuous — only with the persistent world. Removes the E02→E03 travel that existed only
+//                   because E02 and E03 had separate canvases (see 13_P4_CONTINUOUS_GATEWAY_CLEANUP).
+//      legacy     — the P3 page geometry, byte-for-byte. Always used by the legacy / shadow renderers
+//                   (two stacked canvases need the old separation), with no WebGL, and without JS
+//                   (this script never runs, so the attribute is absent).
+//    QA rollback of the geometry alone: ?story-geometry=legacy or window.__ANGST_STORY_GEOMETRY__.
+//    (data-angst-* rather than data-story-*: the data-story-* namespace is reserved for the P1/P2A
+//    debug attributes, which must never appear in normal production mode.)
+//
+// HOW THE TRAVEL IS REMOVED. Both experiences keep their section heights, so every progress range
+// (and therefore every approved state, pacing curve and overlay) is unchanged. Experience 03's
+// section is pulled up over the end of Experience 02's section, so E03's stage pins as soon as
+// E02's stage has finished, minus only the travel still needed by visible E02 DOM:
+//   ≤ 700 px wide — nothing of the E02 stage is painted at E02 p=1 (the E01 signal-hint echo is
+//                   display:none below 701 px, experience-01.css) → pull up by one full stage
+//                   (100svh): E02 p100 and E03 p00 are the same scroll position.
+//   > 700 px      — the signal-hint echo (top: 40% of the stage, SVG content bottom ≤ 100 px below
+//                   that) must still scroll out with its stage exactly as before → keep 40svh + 100px
+//                   of travel and remove the rest (60svh − 100px, rounded toward zero to whole px),
+//                   clamped at 0.
+// While the sections overlap, Experience 03's section is transparent (the body is the same void
+// colour) so its not-yet-active stage — which paints nothing at E03 p=0 — never covers E02.
+const coordinatorMode = String(import.meta.env.PUBLIC_STORY_COORDINATOR ?? 'on');
+const envWorld = String(import.meta.env.PUBLIC_STORY_WORLD ?? 'persistent');
+---
+
+<script is:inline define:vars={{ coordinatorMode, envWorld }}>
+  (function () {
+    var root = document.documentElement;
+    var modes = { persistent: 1, legacy: 1, shadow: 1 };
+    var world = 'persistent';
+    try {
+      var q = new URLSearchParams(window.location.search);
+      if (root.classList.contains('no-webgl') || coordinatorMode === 'off') world = 'legacy';
+      else if (modes[q.get('story-world')]) world = q.get('story-world');
+      else if (modes[window.__ANGST_STORY_WORLD__]) world = window.__ANGST_STORY_WORLD__;
+      else world = envWorld === 'legacy' ? 'legacy' : 'persistent';
+      var geometry = 'continuous';
+      if (world !== 'persistent') geometry = 'legacy';
+      else if (q.get('story-geometry') === 'legacy' || window.__ANGST_STORY_GEOMETRY__ === 'legacy') geometry = 'legacy';
+      root.setAttribute('data-angst-world', world);
+      root.setAttribute('data-angst-geometry', geometry);
+    } catch (e) {
+      root.setAttribute('data-angst-world', 'legacy');
+      root.setAttribute('data-angst-geometry', 'legacy');
+    }
+  })();
+</script>
+
+<style is:global>
+  /* The pull-up is a WHOLE number of CSS px (round(), with an unrounded fallback for engines without
+     it), so Experience 03 keeps the sub-pixel phase of its P3 position: every integer scroll offset
+     maps to exactly the same E03 progress as before, and canonical states stay bit-identical. */
+  html[data-angst-geometry='continuous'] .e03-section {
+    margin-top: min(0px, calc(100px - 60svh));
+    margin-top: min(0px, round(to-zero, calc(100px - 60svh), 1px));
+    background: transparent;
+  }
+
+  @media (max-width: 700px) {
+    html[data-angst-geometry='continuous'] .e03-section {
+      margin-top: -100svh;
+      margin-top: calc(-1 * round(100svh, 1px));
+    }
+  }
+</style>

@@ -31,6 +31,12 @@ export function resolveWorldMode(): WorldMode {
 
 function compute(): WorldMode {
   if (typeof window === 'undefined') return 'legacy'; // SSR: legacy islands render their (identical) empty root markup
+  // P4: StoryGeometry.astro resolves the mode once, synchronously, before Experience 03 is parsed
+  // (same precedence as below) and records it on <html>. That record is authoritative so the page
+  // geometry and the renderer can never disagree. The rules below remain as the fallback for a
+  // document without that script.
+  const recorded = document.documentElement.getAttribute('data-angst-world');
+  if (isMode(recorded)) return recorded;
   if (document.documentElement.classList.contains('no-webgl')) return 'legacy';
   if (String(import.meta.env.PUBLIC_STORY_COORDINATOR ?? 'on') === 'off') return 'legacy';
   try {
@@ -41,6 +47,18 @@ function compute(): WorldMode {
   if (isMode(w)) return w;
   const env = String(import.meta.env.PUBLIC_STORY_WORLD ?? 'persistent');
   return env === 'legacy' ? 'legacy' : 'persistent';
+}
+
+export type StoryGeometry = 'continuous' | 'legacy';
+
+/**
+ * P4 page geometry (see StoryGeometry.astro): 'continuous' (persistent world, E02→E03 legacy travel
+ * removed) or 'legacy' (P3 geometry: legacy / shadow renderers, no WebGL, no JS, or the QA rollback
+ * ?story-geometry=legacy).
+ */
+export function resolveStoryGeometry(): StoryGeometry {
+  if (typeof document === 'undefined') return 'legacy';
+  return document.documentElement.getAttribute('data-angst-geometry') === 'continuous' ? 'continuous' : 'legacy';
 }
 
 /** True when the legacy E02/E03 islands must render their own WebGL canvases (legacy and shadow modes). */

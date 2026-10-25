@@ -55,6 +55,10 @@ export function segmentAt(scrollY: number, e02: SectionGeometry, e03: SectionGeo
   const e02End = e02.top + Math.max(0, e02.height - innerHeight);
   const e03End = e03.top + Math.max(0, e03.height - innerHeight);
   if (scrollY < e02.top) return 'e01';
+  // P4 (continuous geometry): E03's stage pins exactly where E02's pinned range ends, so the two
+  // ranges can share one scroll position (E02 p=1 ≡ E03 p=0, the same world state). The pinned E03
+  // stage owns that tie. With the P3 geometry e03.top > e02End and this line never applies.
+  if (scrollY >= e03.top && scrollY <= e02End) return 'e03';
   if (scrollY <= e02End) return 'e02';
   if (scrollY < e03.top) return 'legacy-transition';
   if (scrollY <= e03End + 0.5) return 'e03';

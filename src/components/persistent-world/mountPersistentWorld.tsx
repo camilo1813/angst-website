@@ -10,10 +10,12 @@
 // E02 slot) and the no-WebGL rule (.no-webgl hides the slots). Only one DOM node moves; the canvas,
 // context, camera and scene are never rebuilt.
 //
-// Across the LEGACY E02→E03 BOUNDARY (both stages displaced by ≥ 1 px — the old site composited two
-// identical world copies there) the host sits in a fixed 100svh layer on the same paint layer, so the
-// one world stays put instead of popping between stages. This is the only intentional compositing
-// difference from the legacy site; it changes no scroll length, pacing, state or overlay.
+// Across the E02→E03 HANDOFF, while both stages are displaced by ≥ 1 px, the host sits in a fixed
+// 100svh layer on the same paint layer, so the one world stays put instead of riding a moving stage.
+// P4 (continuous geometry, StoryGeometry.astro): that interval now exists only on viewports > 700 px,
+// for the 40svh + 100px in which the E02 signal-hint echo scrolls out (≤ 700 px it is zero and this
+// layer is never used). With the P3 geometry (?story-geometry=legacy) it spans the full legacy
+// boundary as before.
 
 import { createRoot } from 'react-dom/client';
 import type { StoryCoordinator, StorySnapshot } from '../../lib/story/coordinator';
@@ -28,6 +30,10 @@ export function worldSlotFor(s: StorySnapshot): WorldSlot {
   const h = s.viewport.svhPx;
   const t02 = stageTop(s.viewport.scrollY, s.sections.e02, h);
   const t03 = stageTop(s.viewport.scrollY, s.sections.e03, h);
+  // P4: once E03's stage is pinned it owns the world, even while E02's (now empty) stage is still in
+  // its last sub-pixel of unpin travel — with the continuous geometry both can hold at the same scroll
+  // position. (With the P3 geometry t03 ≤ 0 only after E02 has fully left, so nothing changes there.)
+  if (t03 <= 0) return 'e03';
   if (t02 > -1) return 'e02';
   if (t03 < 1) return 'e03';
   return 'boundary';

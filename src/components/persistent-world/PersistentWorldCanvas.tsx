@@ -4,7 +4,7 @@ import type { ScrollProgressState } from '../../lib/scrollProgress';
 import type { StoryCoordinator, StorySnapshot } from '../../lib/story/coordinator';
 import { subscribeSectionProgress } from '../../lib/story/progressSource';
 import { computePersistentWorldState, type PersistentWorldState } from '../../lib/story/persistentWorld';
-import { computeSignalAnchor, canvasDpr } from '../../lib/worldRuntime';
+import { computeStableSignalAnchor, canvasDpr } from '../../lib/worldRuntime';
 import PhysicalWorldScene from '../experience-02/PhysicalWorldScene';
 
 /**
@@ -70,13 +70,16 @@ export default function PersistentWorldCanvas({
 
   const isMobile = snap?.mode.isMobile ?? false;
   const [signalAnchor, setSignalAnchor] = useState<[number, number, number] | null>(null);
+  const vw = snap?.viewport.innerWidth ?? 0;
+  const vh = snap?.viewport.innerHeight ?? 0;
+  const svh = snap?.viewport.svhPx ?? 0;
   useEffect(() => {
-    // Same projection, same element, same trigger (mount + mobile breakpoint change) as the legacy
-    // canvases. The persistent world mounts once the E02/E03 islands have hydrated — the moment the
-    // legacy canvases computed theirs — so the inherited (off-screen) anchor is reproduced.
-    const world = computeSignalAnchor(isMobile);
-    if (world) setSignalAnchor(world);
-  }, [isMobile]);
+    // P4: deterministic anchor — a pure function of the viewport (canonical scrollY = 0 layout),
+    // recomputed whenever the viewport or breakpoint changes, never dependent on the scroll position
+    // or moment of mount. For a page mounted at the top it equals the P3 / legacy value exactly.
+    const world = computeStableSignalAnchor(isMobile);
+    if (world) setSignalAnchor((prev) => (prev && prev.every((v, i) => v === world[i]) ? prev : world));
+  }, [isMobile, vw, vh, svh]);
 
   const state = useMemo(
     () => (snap ? computePersistentWorldState({ segment: snap.segment, isMobile, reducedMotion: snap.mode.reducedMotion, e02, e03 }) : null),
