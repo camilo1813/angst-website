@@ -1,0 +1,216 @@
+---
+/**
+ * ANGST motto with a restrained bit/byte transition.
+ * - Screen readers get one stable string (visually hidden span).
+ * - The visible copy is aria-hidden and fully readable without JavaScript.
+ * - Only "it" in "Bites" and "Byte" in "Byte Back" receive the digital state.
+ */
+interface Props {
+  id?: string;
+  class?: string;
+}
+const { id, class: className = '' } = Astro.props;
+const motto = 'When Reality Bites, We Byte Back™';
+---
+
+<h2 id={id} class={`motto ${className}`} data-motto>
+  <span class="motto__sr">{motto}</span>
+  <span class="motto__vis" aria-hidden="true">
+    <span>When Reality </span><span class="motto__word"
+      >B<span class="motto__tok motto__tok--bit" data-tok="bit"
+        ><span class="motto__ch">i</span><span class="motto__ch">t</span></span
+      ><span data-after-bit>es,</span></span
+    ><br />
+    <span data-before-byte>We </span><span class="motto__tok motto__tok--byte" data-tok="byte"
+      ><span class="motto__ch">B</span><span class="motto__ch">y</span><span class="motto__ch">t</span><span
+        class="motto__ch">e</span
+      ></span
+    > Back<sup class="motto__tm">™</sup>
+    <span class="motto__sig"></span>
+  </span>
+</h2>
+
+<script>
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  type Frame = (string | null)[];
+
+  // Digit states per character (null = original glyph). Short, legible, never the whole word.
+  const BIT_FRAMES: Frame[] = [
+    ['1', null],
+    ['1', '0'],
+    ['0', '1'],
+    ['1', '0'],
+    [null, '1'],
+  ];
+  const BYTE_FRAMES: Frame[] = [
+    ['0', null, null, null],
+    ['0', '1', null, null],
+    [null, '1', '0', null],
+    [null, null, '0', '1'],
+    ['1', null, null, '0'],
+    [null, null, null, '1'],
+  ];
+
+  const wait = (ms: number, sig: { stop: boolean }) =>
+    new Promise<void>((res, rej) => setTimeout(() => (sig.stop ? rej(new Error('stop')) : res()), ms));
+
+  function setup(root: HTMLElement) {
+    const bit = root.querySelector<HTMLElement>('[data-tok="bit"]')!;
+    const byte = root.querySelector<HTMLElement>('[data-tok="byte"]')!;
+    const afterBit = root.querySelector<HTMLElement>('[data-after-bit]')!;
+    const beforeByte = root.querySelector<HTMLElement>('[data-before-byte]')!;
+    const sigEl = root.querySelector<HTMLElement>('.motto__sig')!;
+    const vis = root.querySelector<HTMLElement>('.motto__vis')!;
+    const bitCh = [...bit.querySelectorAll<HTMLElement>('.motto__ch')];
+    const byteCh = [...byte.querySelectorAll<HTMLElement>('.motto__ch')];
+
+    let run: { stop: boolean } | null = null;
+    let phase = 'idle';
+
+    const paint = (chars: HTMLElement[], f: Frame | null) =>
+      chars.forEach((c, i) => {
+        const d = f ? f[i] : null;
+        if (d) {
+          c.dataset.d = d;
+          c.classList.add('is-d');
+        } else {
+          c.classList.remove('is-d');
+          delete c.dataset.d;
+        }
+      });
+
+    const reset = () => {
+      paint(bitCh, null);
+      paint(byteCh, null);
+      root.classList.remove('is-bit', 'is-byte', 'is-link');
+      sigEl.getAnimations().forEach((a) => a.cancel());
+      sigEl.style.opacity = '0';
+      phase = 'idle';
+    };
+
+    const rel = (el: HTMLElement) => {
+      const o = vis.getBoundingClientRect();
+      const rects = el.getClientRects();
+      const r = rects[rects.length - 1] ?? el.getBoundingClientRect();
+      const f = rects[0] ?? r;
+      return { l: f.left - o.left, r: r.right - o.left, b: r.bottom - o.top, top: f.top - o.top };
+    };
+
+    // 1px signal travelling from BIT to BYTE, following line wraps.
+    const travel = (ms: number) => {
+      const a = rel(bit), e = rel(afterBit), w = rel(beforeByte), y = rel(byte);
+      const line = Math.max(1, Math.round(parseFloat(getComputedStyle(root).fontSize) * 0.03));
+      sigEl.style.height = `${line}px`;
+      const yA = a.b - line * 2, yB = y.b - line * 2;
+      const sameLine = Math.abs(a.top - y.top) < 4;
+      const len = Math.max(18, (a.r - a.l) * 0.6);
+      const kf: Keyframe[] = sameLine
+        ? [
+            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0 },
+            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0.8, offset: 0.15 },
+            { transform: `translate(${y.l - len}px, ${yB}px)`, width: `${len}px`, opacity: 0.8, offset: 0.85 },
+            { transform: `translate(${y.l}px, ${yB}px)`, width: '0px', opacity: 0 },
+          ]
+        : [
+            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0 },
+            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0.8, offset: 0.1 },
+            { transform: `translate(${e.r - len}px, ${yA}px)`, width: `${len}px`, opacity: 0.8, offset: 0.45 },
+            { transform: `translate(${e.r}px, ${yA}px)`, width: '0px', opacity: 0, offset: 0.5 },
+            { transform: `translate(${w.l}px, ${yB}px)`, width: '0px', opacity: 0, offset: 0.52 },
+            { transform: `translate(${w.l}px, ${yB}px)`, width: `${len}px`, opacity: 0.8, offset: 0.6 },
+            { transform: `translate(${y.l - len}px, ${yB}px)`, width: `${len}px`, opacity: 0.8, offset: 0.92 },
+            { transform: `translate(${y.l}px, ${yB}px)`, width: '0px', opacity: 0 },
+          ];
+      return sigEl.animate(kf, { duration: ms, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }).finished;
+    };
+
+    async function sequence(sig: { stop: boolean }, startAtActive = false) {
+      try {
+        if (!startAtActive) {
+          phase = 'hold';
+          await wait(1800, sig);
+        }
+        for (;;) {
+          // 02 — BIT recognition (~700ms)
+          phase = 'active';
+          root.classList.add('is-bit');
+          for (const f of BIT_FRAMES) {
+            paint(bitCh, f);
+            await wait(120, sig);
+          }
+          paint(bitCh, null);
+          await wait(100, sig);
+
+          // 03 — signal travel (~420ms)
+          await travel(420);
+          if (sig.stop) throw new Error('stop');
+
+          // 04 — BYTE recognition (~840ms)
+          root.classList.add('is-byte');
+          for (const f of BYTE_FRAMES) {
+            paint(byteCh, f);
+            await wait(130, sig);
+          }
+          paint(byteCh, null);
+          await wait(60, sig);
+
+          // 05 — relationship: matched pulse on both (~400ms)
+          root.classList.add('is-link');
+          paint(bitCh, [null, '1']);
+          paint(byteCh, [null, null, null, '1']);
+          await wait(160, sig);
+          paint(bitCh, null);
+          paint(byteCh, null);
+          await wait(240, sig);
+
+          // 06 — settle (~500ms) and hold (~2.2s)
+          root.classList.remove('is-bit', 'is-byte', 'is-link');
+          await wait(500, sig);
+          phase = 'hold';
+          await wait(2200, sig);
+          await wait(0, sig);
+        }
+      } catch {
+        /* stopped */
+      }
+    }
+
+    const start = (atActive = false) => {
+      if (run) run.stop = true;
+      reset();
+      run = { stop: false };
+      sequence(run, atActive);
+    };
+    const stop = () => {
+      if (run) run.stop = true;
+      run = null;
+      reset();
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting && !reduce.matches) {
+            if (!run) start();
+          } else stop();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(root);
+
+    // Desktop: hovering during the quiet hold replays the transition once (same intensity).
+    root.addEventListener('mouseenter', () => {
+      if (run && phase === 'hold' && !reduce.matches && window.matchMedia('(hover: hover)').matches) start(true);
+    });
+    reduce.addEventListener('change', () => (reduce.matches ? stop() : null));
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) return stop();
+      const r = root.getBoundingClientRect();
+      if (!run && !reduce.matches && r.bottom > 0 && r.top < window.innerHeight) start();
+    });
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-motto]').forEach(setup);
+</script>

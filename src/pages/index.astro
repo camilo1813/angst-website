@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import SiteHeader from '../components/SiteHeader.astro';
+import BinaryMotto from '../components/BinaryMotto.astro';
 
 // Single public contact address for all contact / collaboration actions.
 const contactEmail = 'info@angstdata.in';
@@ -725,7 +726,7 @@ const matrix = [
     <!-- ============ CTA ============ -->
     <section class="section section--black cta" id="contact" aria-labelledby="cta-title">
       <div class="wrap">
-        <h2 id="cta-title" class="display display--inv">When Reality Bites,<br />We Byte Back.</h2>
+        <BinaryMotto id="cta-title" class="display display--inv" />
         <p class="lead lead--inv">Let's explore what physical-world intelligence can become.</p>
         <div class="actions">
           <a class="btn btn--light" href={mailCollab}>Collaborate with ANGST</a>
