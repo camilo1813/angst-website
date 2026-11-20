@@ -8,6 +8,7 @@
 
 import { getCameraProfile } from './sceneMaps';
 import { projectScreenPointToWorld } from './signalAlignment';
+import { framingFov } from './framing';
 import { DESKTOP_BUDGET, MOBILE_BUDGET, type PointBudget } from './pointBudgets';
 
 export { MOBILE_BREAKPOINT_QUERY } from './breakpoints';
@@ -34,7 +35,7 @@ export function computeSignalAnchor(isMobile: boolean): [number, number, number]
     window.innerHeight,
     profile.start,
     profile.lookAtStart,
-    profile.fov,
+    framingFov(profile.start, profile.lookAtStart, window.innerWidth, window.innerHeight, isMobile, profile.fov),
     9,
   );
 }
@@ -74,7 +75,9 @@ export function computeStableSignalAnchor(isMobile: boolean): [number, number, n
     y = sectionTopInDocument + (rect.top - stageTopInViewport) + rect.height / 2;
   }
   const profile = getCameraProfile(isMobile);
-  return projectScreenPointToWorld(x, y, window.innerWidth, window.innerHeight, profile.start, profile.lookAtStart, profile.fov, 9);
+  // Same responsive framing as the rendered E02-start camera (lib/framing.ts; = profile.fov at 16:9).
+  const fov = framingFov(profile.start, profile.lookAtStart, window.innerWidth, window.innerHeight, isMobile, profile.fov);
+  return projectScreenPointToWorld(x, y, window.innerWidth, window.innerHeight, profile.start, profile.lookAtStart, fov, 9);
 }
 
 /** Device-pixel-ratio cap for world canvases. */

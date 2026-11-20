@@ -1,6 +1,5 @@
 ---
-import '../styles/global.css';
-import '../styles/experience-01.css';
+import '../styles/site.css';
 
 interface Props {
   title?: string;
@@ -8,9 +7,11 @@ interface Props {
 }
 
 const {
-  title = 'Angst — Physical Safety Intelligence',
-  description = 'Life. Machines. Environments. One Safety Intelligence Layer.',
+  title = 'ANGST — Physical-World Safety Intelligence',
+  description = 'ANGST develops intelligence for understanding physical-world events across life, machines and environments through KURTIQ and KURTIQ Vision.',
 } = Astro.props;
+
+const canonical = 'https://angstdata.ai/';
 ---
 
 <!doctype html>
@@ -18,17 +19,24 @@ const {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content={description} />
-    <meta name="color-scheme" content="dark" />
     <title>{title}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
-      rel="stylesheet"
-    />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#FFFFFF" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ANGST" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
   </head>
   <body>
+    <a class="skip-link" href="#main">Skip to content</a>
     <slot />
   </body>
 </html>

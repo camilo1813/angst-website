@@ -18,6 +18,7 @@
 
 import { computeSceneValues, copyProtectionStrength } from '../sceneMaps';
 import { computeExperience03State, computeFallbackBucket } from '../experience03Maps';
+import { computeExperience04State } from '../experience04Maps';
 import { computeSectionProgress, PROGRESS_EMIT_THRESHOLD } from '../scrollProgress';
 import type { StoryCoordinator, StorySnapshot, StorySectionId } from './coordinator';
 import { progressConsumers, resolveProgressSource } from './progressSource';
@@ -103,9 +104,9 @@ export function attachShadowComparator(coord: StoryCoordinator, opts: { debugAtt
     const consumersDue = loadedAt !== null && Date.now() - loadedAt >= CONSUMER_GRACE_MS;
 
     // ---- geometry: legacy live formula vs coordinator cached geometry
-    (['e02', 'e03'] as StorySectionId[]).forEach((id) => {
+    (['e02', 'e03', 'e04'] as StorySectionId[]).forEach((id) => {
       if (!s.near[id]) return;
-      const el = q(id === 'e02' ? '[data-e02-section]' : '[data-e03-section]');
+      const el = q(`[data-${id}-section]`);
       const live = el ? computeSectionProgress(el) : null;
       expect(s, `${id}.liveGeometry`, live, (v) => {
         const d = Math.abs(Number(v) - s.progress[id]);
@@ -128,6 +129,9 @@ export function attachShadowComparator(coord: StoryCoordinator, opts: { debugAtt
         ['e03-overlay', 'e03'],
         ...(legacyCanvases ? ([['e03-canvas', 'e03']] as Array<[string, StorySectionId]>) : []),
         ...(persistentWorld ? ([['world-e02', 'e02'], ['world-e03', 'e03']] as Array<[string, StorySectionId]>) : []),
+        // E04: its copy/fallback script always; the observation layer only with the VISIBLE persistent world.
+        ...(s.sections.e04 ? ([['e04-overlay', 'e04']] as Array<[string, StorySectionId]>) : []),
+        ...(s.sections.e04 && wm === 'persistent' ? ([['world-e04', 'e04']] as Array<[string, StorySectionId]>) : []),
       ];
       for (const [name, id] of expected) {
         const rec = registry.get(name);
@@ -181,6 +185,15 @@ export function attachShadowComparator(coord: StoryCoordinator, opts: { debugAtt
         const ok = [p - PROGRESS_EMIT_THRESHOLD, p, p + PROGRESS_EMIT_THRESHOLD].some((pp) => computeFallbackBucket(Math.min(1, Math.max(0, pp))) === fb);
         if (!ok) fail(s, 'e03.fallbackBucket', fb, computeFallbackBucket(p));
       });
+    }
+
+    // ---- E04 copy lines (Experience04Observation.astro script)
+    if (s.near.e04) {
+      const p = s.progress.e04;
+      for (const [name, sel, key] of [['e04.line1', '[data-e04-line="1"]', 'line1'], ['e04.line2', '[data-e04-line="2"]', 'line2']] as Array<[string, string, 'line1' | 'line2']>) {
+        const [lo, hi] = band((pp) => computeExperience04State(pp, mob, rm).copy[key], p);
+        expect(s, name, inlineOpacity(q(sel)), inBand(s, name, lo, hi, p));
+      }
     }
 
     if ((run.fails.length || run.missing.length) && attempt < SETTLE_RETRIES) {

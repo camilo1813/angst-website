@@ -1,0 +1,101 @@
+---
+// EXPERIENCE 04 — FRAGMENTED OBSERVATION (design report 14, concept "Independent Witnesses").
+// The physical world is the ONE persistent world (hosted in .e04-canvas-root while this stage is
+// pinned); the observation layer is drawn by persistent-world/ObservationLayer.tsx. This file owns the
+// section structure, the confirming copy, accessibility text and the static fallback.
+import '../../styles/experience-04.css';
+import Experience02Fallback from '../experience-02/Experience02Fallback.astro';
+
+// Static fallback fragments, in Experience02Fallback's own 1600×900 viewBox (slice), attached to the
+// entities that drawing contains: Life cluster ≈ (560, 580), machine ≈ (925, 540), environment ≈ (1300, 560).
+const VO = [770, 330], VU = [534, 500], VL = [600, 600];
+const vTicks = Array.from({ length: 14 }, (_, i) => 784 + i * 6);
+const MA = [925, 540];
+const mPath = 'M939,556 H958 V552 H989 V552 H995 V556 H1013 V558 H1035';
+const EZ = [1300, 560];
+const eArc = (() => {
+  const r = 36, a0 = (-200 * Math.PI) / 180, a1 = (-90 * Math.PI) / 180;
+  return `M${(EZ[0] + r * Math.cos(a0)).toFixed(1)},${(EZ[1] + r * Math.sin(a0)).toFixed(1)} A${r},${r} 0 0 1 ${(EZ[0] + r * Math.cos(a1)).toFixed(1)},${(EZ[1] + r * Math.sin(a1)).toFixed(1)}`;
+})();
+const eVals = [0, -0.75, 0.35, -0.25].map((v, i) => [1150 + i * 28, 514 + v * 4]);
+---
+
+<section class="e04-section" data-e04-section aria-labelledby="e04-copy-line-2" aria-describedby="e04-scene-description">
+  <div class="e04-stage">
+    <div class="e04-fallback" data-e04-fallback aria-hidden="true">
+      <Experience02Fallback />
+      <svg class="e04-fallback-obs" data-e04-fallback-obs viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" role="presentation" focusable="false">
+        <g data-sys="v">
+          <line x1={VO[0]} y1={VO[1]} x2={VU[0]} y2={VU[1]} stroke="#8bcbff" stroke-width="1" opacity="0.14" />
+          <line x1={VO[0]} y1={VO[1]} x2={VL[0]} y2={VL[1]} stroke="#8bcbff" stroke-width="1" opacity="0.14" />
+          <path d={`M${VU[0]},${VU[1]} Q${(VU[0] + VL[0]) / 2 - 24},${(VU[1] + VL[1]) / 2 + 12} ${VL[0]},${VL[1]}`} fill="none" stroke="#6d8396" stroke-width="1.2" opacity="0.6" />
+          <circle cx={VO[0]} cy={VO[1]} r="3" fill="none" stroke="#8bcbff" stroke-width="1.2" opacity="0.8" />
+          <line x1="782" y1="346" x2={vTicks[13] + 2} y2="346" stroke="#5b6066" stroke-width="1" opacity="0.45" />
+          {vTicks.map((x, i) => <line x1={x} y1="341" x2={x} y2="347" stroke={i === 13 ? '#8bcbff' : '#6d8396'} stroke-width="1" opacity={i === 13 ? 0.9 : 0.55} />)}
+        </g>
+        <g data-sys="m">
+          <line x1={MA[0]} y1={MA[1] - 4} x2={MA[0]} y2={MA[1] - 24} stroke="#6d8396" stroke-width="1" opacity="0.6" />
+          <circle cx={MA[0]} cy={MA[1]} r="2.6" fill="#8bcbff" opacity="0.7" />
+          <path d={mPath} fill="none" stroke="#6d8396" stroke-width="1" opacity="0.6" />
+          <circle cx="1013" cy="558" r="1.8" fill="#8bcbff" opacity="0.9" />
+        </g>
+        <g data-sys="e">
+          <path d={eArc} fill="none" stroke="#5b6066" stroke-width="1" opacity="0.6" />
+          <circle cx={EZ[0]} cy={EZ[1]} r="2.2" fill="#8bcbff" opacity="0.7" />
+          <polyline points={eVals.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke="#5b6066" stroke-width="1" opacity="0.65" />
+          {eVals.map(([x, y], i) => <circle cx={x} cy={y} r="1.6" fill={i === 3 ? '#8bcbff' : '#6d8396'} opacity={i === 3 ? 0.9 : 0.6} />)}
+        </g>
+      </svg>
+    </div>
+
+    <div class="e04-canvas-root" aria-hidden="true"></div>
+
+    <div class="e04-copy">
+      <div class="e04-shield" data-e04-shield aria-hidden="true"></div>
+      <p class="e04-line e04-line--1" data-e04-line="1">Every system sees something.</p>
+      <p class="e04-line e04-line--2" id="e04-copy-line-2" data-e04-line="2">No system sees the <span class="e04-nowrap">whole event.</span></p>
+    </div>
+  </div>
+
+  <p id="e04-scene-description" class="visually-hidden">
+    Three different systems each observe a different part of the same physical scene, at different
+    moments: one sees part of a person, one reports a machine's own state, one measures a local
+    environmental condition. None of them observes the whole situation.
+  </p>
+</section>
+
+<noscript>
+  <style is:inline>
+    .e04-section { min-height: 100svh; }
+    .e04-line { opacity: 1; }
+  </style>
+</noscript>
+
+<script>
+  import { subscribeSectionProgress } from '../../lib/story/progressSource';
+  import { computeExperience04State } from '../../lib/experience04Maps';
+  import { prefersReducedMotion } from '../../lib/scrollProgress';
+
+  const section = document.querySelector('[data-e04-section]');
+  if (section) {
+    const line1 = section.querySelector('[data-e04-line="1"]') as HTMLElement | null;
+    const line2 = section.querySelector('[data-e04-line="2"]') as HTMLElement | null;
+    const shield = section.querySelector('[data-e04-shield]') as HTMLElement | null;
+    const fallbackObs = section.querySelector('[data-e04-fallback-obs]');
+    const mobileMedia = window.matchMedia('(max-width: 640px)');
+    let last = 0;
+    const apply = (progress: number) => {
+      last = progress;
+      const st = computeExperience04State(progress, mobileMedia.matches, prefersReducedMotion());
+      if (line1) line1.style.opacity = String(st.copy.line1);
+      if (line2) line2.style.opacity = String(st.copy.line2);
+      if (shield) shield.style.opacity = String(0.9 * Math.max(st.copy.line1, st.copy.line2));
+      // Static fallback: the three fragments appear in discrete steps (one per system).
+      const step = (['v', 'm', 'e'] as const).filter((id) => st.systems[id].count > 0).length;
+      fallbackObs?.setAttribute('data-e04-step', String(step));
+    };
+    apply(0);
+    subscribeSectionProgress('e04-overlay', 'e04', section, (s) => apply(s.progress));
+    mobileMedia.addEventListener('change', () => apply(last));
+  }
+</script>

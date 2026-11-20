@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { SceneValues } from '../../lib/sceneMaps';
+import { getCameraProfile, type SceneValues } from '../../lib/sceneMaps';
+import { framingFov, zoomedFov } from '../../lib/framing';
 import { lerp } from '../../lib/scrollProgress';
 import SpatialGrid from './SpatialGrid';
 import StructuralPoints from './StructuralPoints';
@@ -58,17 +59,40 @@ interface PhysicalWorldSceneProps {
   pointBudget: { life: number; machine: number; environment: number; structural: number; bridge: number };
 }
 
+/**
+ * Drives the ONE camera. Pose comes from the scene maps; the vertical FOV comes from the responsive
+ * framing rule (lib/framing.ts): the approved base FOV, widened only as much as this window's shape
+ * needs to keep the world's subjects in the useful frame (unchanged at 16:9), then narrowed by the
+ * E03 focus zoom. Same rule for E02, E03 and E04 — they all render through this rig.
+ */
 function CameraRig({
   position,
   lookAt,
+  framingPosition,
+  framingLookAt,
+  zoom,
+  isMobile,
 }: {
   position: [number, number, number];
   lookAt: [number, number, number];
+  framingPosition: [number, number, number];
+  framingLookAt: [number, number, number];
+  zoom: number;
+  isMobile: boolean;
 }) {
-  const { camera } = useThree();
+  const { camera, size } = useThree();
+  const baseFov = getCameraProfile(isMobile).fov;
   useFrame(() => {
     camera.position.set(position[0], position[1], position[2]);
     camera.lookAt(lookAt[0], lookAt[1], lookAt[2]);
+    if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+      const cam = camera as THREE.PerspectiveCamera;
+      const fov = zoomedFov(framingFov(framingPosition, framingLookAt, size.width, size.height, isMobile, baseFov), zoom);
+      if (Math.abs(cam.fov - fov) > 1e-6) {
+        cam.fov = fov;
+        cam.updateProjectionMatrix();
+      }
+    }
   });
   return null;
 }
@@ -251,7 +275,14 @@ export default function PhysicalWorldScene({
       <ambientLight intensity={0.55} />
       <directionalLight position={[2, 6, 4]} intensity={0.25} />
 
-      <CameraRig position={scene.cameraPosition} lookAt={scene.cameraLookAt} />
+      <CameraRig
+        position={scene.cameraPosition}
+        lookAt={scene.cameraLookAt}
+        framingPosition={scene.framingPosition}
+        framingLookAt={scene.framingLookAt}
+        zoom={scene.zoom}
+        isMobile={isMobile}
+      />
 
       <SignalAnchor anchor={signalAnchor} boost={scene.signalBoost} />
 

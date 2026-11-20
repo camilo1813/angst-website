@@ -8,7 +8,7 @@
 
 import { NEAR_MARGIN_FRACTION } from '../scrollProgress';
 
-export type SectionId = 'e01' | 'e02' | 'e03';
+export type SectionId = 'e01' | 'e02' | 'e03' | 'e04';
 
 export interface SectionGeometry {
   id: SectionId;
@@ -47,11 +47,13 @@ export function sectionProgressRaw(scrollY: number, s: SectionGeometry, innerHei
 export type Segment =
   | 'e01'                 // E01 on screen (incl. the unpinned travel while E02 slides in)
   | 'e02'                 // E02 sticky stage pinned
-  | 'legacy-transition'   // unpinned E02→E03 boundary (to be removed in a later phase)
+  | 'legacy-transition'   // unpinned E02→E03 boundary (desktop residual: E02 signal-hint echo leaving)
   | 'e03'                 // E03 sticky stage pinned
-  | 'after-e03';
+  | 'e04-handoff'         // E04: E03 has ended, its statement is scrolling out, E04 not yet pinned
+  | 'e04'                 // E04 sticky stage pinned (and anything after it: E04 is the last section)
+  | 'after-e03';          // after E03 on a page without E04
 
-export function segmentAt(scrollY: number, e02: SectionGeometry, e03: SectionGeometry, innerHeight: number): Segment {
+export function segmentAt(scrollY: number, e02: SectionGeometry, e03: SectionGeometry, innerHeight: number, e04?: SectionGeometry | null): Segment {
   const e02End = e02.top + Math.max(0, e02.height - innerHeight);
   const e03End = e03.top + Math.max(0, e03.height - innerHeight);
   if (scrollY < e02.top) return 'e01';
@@ -62,6 +64,8 @@ export function segmentAt(scrollY: number, e02: SectionGeometry, e03: SectionGeo
   if (scrollY <= e02End) return 'e02';
   if (scrollY < e03.top) return 'legacy-transition';
   if (scrollY <= e03End + 0.5) return 'e03';
+  // E04 (FRAGMENTED OBSERVATION): the world stays at E03's final frame; E04 adds observations about it.
+  if (e04) return scrollY < e04.top ? 'e04-handoff' : 'e04';
   return 'after-e03';
 }
 

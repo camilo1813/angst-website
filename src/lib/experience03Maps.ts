@@ -57,17 +57,50 @@ const ENVIRONMENT_WINDOW = [0.56, 0.64, 0.72, 0.84] as const;
 // Attenuation targets a non-focused category falls to while another
 // category holds full dominance — every value sits inside the spec's
 // approved per-state hierarchy ranges (sections 7, 11, 15).
+// VISUAL CORRECTION PASS: non-focused categories dim much more strongly (was 0.25–0.3), so focus no
+// longer reads as a small opacity difference.
 const ATTEN = {
-  lifeByMachine: 0.25,
+  lifeByMachine: 0.1,
+  // Environment is the space AROUND the other two: they stay faintly present inside it.
   lifeByEnvironment: 0.3,
-  machineByLife: 0.25,
+  machineByLife: 0.1,
   machineByEnvironment: 0.3,
-  environmentByLife: 0.28,
-  environmentByMachine: 0.3,
-  gridByLife: 0.2,
-  gridByMachine: 0.2,
-  gridByEnvironment: 0.55,
+  environmentByLife: 0.1,
+  environmentByMachine: 0.12,
+  gridByLife: 0.1,
+  gridByMachine: 0.1,
+  gridByEnvironment: 1.0,
 };
+
+// …and the focused category becomes more present than its balanced strength (scene opacity factors;
+// every resulting material opacity stays ≤ 1).
+const FOCUS_BOOST = { life: 1.25, machine: 1.45, environment: 1.95 };
+
+/**
+ * Restrained SPATIAL emphasis (visual correction pass): during each focus beat the camera pans a
+ * little toward the subject and narrows its field slightly (zoom). Same camera height and depth —
+ * no dolly — so nothing in the world crosses the camera plane. Balance (no focus) returns the camera
+ * exactly to the approved E02-final pose.
+ *   lookAt shift = (target − base lookAt) × LOOK_SHARE × dominance
+ *   camera x pan = lookAt x shift × PAN_SHARE
+ */
+interface FocusMove { target: [number, number, number]; zoom: number }
+const DESKTOP_FOCUS: Record<'life' | 'machine' | 'environment', FocusMove> = {
+  life: { target: [-2.2, 1.15, 3.2], zoom: 1.22 },
+  machine: { target: [1.8, 0.75, 4.4], zoom: 1.22 },
+  // Environment: the view opens out (wider field) and lifts slightly over the environmental field, so the
+  // whole space around Life and Machine — now faint inside it — becomes the subject.
+  environment: { target: [0.9, 1.7, 2.6], zoom: 0.84 },
+};
+const MOBILE_FOCUS: Record<'life' | 'machine' | 'environment', FocusMove> = {
+  life: { target: [1.07, 0.75, 3.6], zoom: 1.12 },
+  machine: { target: [1.35, 0.7, 4.0], zoom: 1.12 },
+  // Mobile: the portrait frame shows almost none of the wide environment field at balance; the beat
+  // opens the view up and back over the field (Life / Machine stay at the bottom of the frame).
+  environment: { target: [1.2, 1.6, 0.5], zoom: 0.72 },
+};
+const LOOK_SHARE = 0.55;
+const PAN_SHARE = 0.45;
 
 export function computeDominance(progress: number) {
   return {
@@ -81,9 +114,9 @@ export function computeCategoryWeights(progress: number): CategoryWeights {
   const { life, machine, environment } = computeDominance(progress);
 
   return {
-    life: lerp(1, ATTEN.lifeByMachine, machine) * lerp(1, ATTEN.lifeByEnvironment, environment),
-    machine: lerp(1, ATTEN.machineByLife, life) * lerp(1, ATTEN.machineByEnvironment, environment),
-    environment: lerp(1, ATTEN.environmentByLife, life) * lerp(1, ATTEN.environmentByMachine, machine),
+    life: lerp(1, FOCUS_BOOST.life, life) * lerp(1, ATTEN.lifeByMachine, machine) * lerp(1, ATTEN.lifeByEnvironment, environment),
+    machine: lerp(1, FOCUS_BOOST.machine, machine) * lerp(1, ATTEN.machineByLife, life) * lerp(1, ATTEN.machineByEnvironment, environment),
+    environment: lerp(1, FOCUS_BOOST.environment, environment) * lerp(1, ATTEN.environmentByLife, life) * lerp(1, ATTEN.environmentByMachine, machine),
     grid:
       lerp(1, ATTEN.gridByLife, life) *
       lerp(1, ATTEN.gridByMachine, machine) *
@@ -91,12 +124,33 @@ export function computeCategoryWeights(progress: number): CategoryWeights {
   };
 }
 
-/** Applies this frame's category weights on top of E02's frozen final scene. Camera, signal, field connections, and central bridge stay exactly at their approved final values throughout. */
-export function buildExperience03Scene(baseScene: SceneValues, progress: number): SceneValues {
+/** Applies this frame's category weights and focus reframe on top of E02's final scene. Signal, field connections and central bridge stay at their final values; the camera returns exactly to the E02-final pose whenever no category is in focus. */
+export function buildExperience03Scene(baseScene: SceneValues, progress: number, isMobile = false): SceneValues {
   const weights = computeCategoryWeights(progress);
+  const dom = computeDominance(progress);
+  const focus = isMobile ? MOBILE_FOCUS : DESKTOP_FOCUS;
+  const look = [...baseScene.cameraLookAt] as [number, number, number];
+  let zoom = 1;
+  for (const k of ['life', 'machine', 'environment'] as const) {
+    const d = dom[k];
+    if (d <= 0) continue;
+    for (let i = 0; i < 3; i++) look[i] += (focus[k].target[i] - baseScene.cameraLookAt[i]) * LOOK_SHARE * d;
+    zoom *= lerp(1, focus[k].zoom, d);
+  }
+  const cam: [number, number, number] = [
+    baseScene.cameraPosition[0] + (look[0] - baseScene.cameraLookAt[0]) * PAN_SHARE,
+    baseScene.cameraPosition[1],
+    baseScene.cameraPosition[2],
+  ];
 
   return {
     ...baseScene,
+    cameraPosition: cam,
+    cameraLookAt: look,
+    // The responsive framing stays fitted to the balanced (E02-final) pose.
+    framingPosition: baseScene.cameraPosition,
+    framingLookAt: baseScene.cameraLookAt,
+    zoom,
     lifeVisibility: baseScene.lifeVisibility * weights.life,
     machineVisibility: baseScene.machineVisibility * weights.machine,
     machineAxisOpacity: baseScene.machineAxisOpacity * weights.machine,

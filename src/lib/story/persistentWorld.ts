@@ -22,7 +22,9 @@ export type WorldPhase = 'e02' | 'e03';
  * world is continuous because E02 p=1 and E03 p=0 are the same scene (see handoffDifferences).
  */
 export function worldPhaseFor(segment: Segment): WorldPhase {
-  return segment === 'e03' || segment === 'after-e03' ? 'e03' : 'e02';
+  // E04 adds information ABOUT the world, never a new world state: through the E03→E04 handoff and
+  // all of E04 the world stays in the E03 phase, whose progress is clamped at 1 (E03's final frame).
+  return segment === 'e03' || segment === 'after-e03' || segment === 'e04-handoff' || segment === 'e04' ? 'e03' : 'e02';
 }
 
 export interface PersistentWorldInputs {
@@ -49,7 +51,7 @@ export interface PersistentWorldState {
 export function worldScene(phase: WorldPhase, progress: number, isMobile: boolean): SceneValues {
   return phase === 'e02'
     ? computeSceneValues(progress, isMobile)
-    : buildExperience03Scene(computeSceneValues(1, isMobile), progress);
+    : buildExperience03Scene(computeSceneValues(1, isMobile), progress, isMobile);
 }
 
 export function computePersistentWorldState(i: PersistentWorldInputs): PersistentWorldState {

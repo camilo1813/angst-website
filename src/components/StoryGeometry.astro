@@ -71,6 +71,14 @@ const envWorld = String(import.meta.env.PUBLIC_STORY_WORLD ?? 'persistent');
     background: transparent;
   }
 
+  /* E04: pulled up over E03's end so its stage pins after 45svh of handoff travel — the travel the
+     frozen E03 statement needs to clear the first observation source (design report 14 §18). */
+  html[data-angst-geometry='continuous'] .e04-section {
+    margin-top: -55svh;
+    margin-top: calc(-1 * round(55svh, 1px));
+    background: transparent;
+  }
+
   @media (max-width: 700px) {
     html[data-angst-geometry='continuous'] .e03-section {
       margin-top: -100svh;

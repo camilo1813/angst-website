@@ -1,0 +1,46 @@
+---
+const links = [
+  { href: '#kurtiq', label: 'KURTIQ' },
+  { href: '#vision', label: 'KURTIQ Vision' },
+  { href: '#applications', label: 'Applications' },
+  { href: '#research', label: 'Research' },
+  { href: '#collaborate', label: 'Collaborate' },
+  { href: '#company', label: 'Company' },
+];
+---
+
+<header class="hdr" id="top">
+  <div class="hdr__inner wrap">
+    <a class="hdr__brand" href="#top" aria-label="ANGST — home">ANGST</a>
+
+    <nav class="hdr__nav" aria-label="Primary">
+      <ul>
+        {links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+      </ul>
+      <a class="btn btn--dark btn--sm" href="#contact">Contact</a>
+    </nav>
+
+    <details class="mnav">
+      <summary aria-label="Menu">
+        <span class="mnav__icon" aria-hidden="true"></span>
+        <span class="mnav__label">Menu</span>
+      </summary>
+      <nav class="mnav__panel" aria-label="Mobile">
+        {links.map((l) => <a href={l.href}>{l.label}</a>)}
+        <a class="btn btn--dark" href="#contact">Contact</a>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<script>
+  const hdr = document.querySelector('.hdr');
+  const menu = document.querySelector<HTMLDetailsElement>('.mnav');
+  const onScroll = () => hdr?.classList.toggle('is-scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+  menu?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => menu.removeAttribute('open')));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu?.open) menu.removeAttribute('open');
+  });
+</script>

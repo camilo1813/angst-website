@@ -23,13 +23,19 @@ import { handoffDifferences } from '../../lib/story/persistentWorld';
 import { stageTop } from '../../lib/story/geometry';
 import PersistentWorldCanvas, { type PersistentWorldReport, type WorldLedger } from './PersistentWorldCanvas';
 
-export type WorldSlot = 'e02' | 'boundary' | 'e03';
+export type WorldSlot = 'e02' | 'boundary' | 'e03' | 'e04';
 
 /** Which slot hosts the one world, from coordinator geometry only (no layout reads). */
 export function worldSlotFor(s: StorySnapshot): WorldSlot {
   const h = s.viewport.svhPx;
   const t02 = stageTop(s.viewport.scrollY, s.sections.e02, h);
   const t03 = stageTop(s.viewport.scrollY, s.sections.e03, h);
+  const e04 = s.sections.e04;
+  // E04: once its stage is pinned it owns the world (and the observation layer that rides with it).
+  if (e04 && stageTop(s.viewport.scrollY, e04, h) <= 0) return 'e04';
+  // E03 → E04 handoff: E03's stage (its closing statement) scrolls out while E04's is not pinned yet —
+  // the world stays put in the fixed boundary layer, exactly like the E02 → E03 desktop residual.
+  if (e04 && t03 <= -1) return 'boundary';
   // P4: once E03's stage is pinned it owns the world, even while E02's (now empty) stage is still in
   // its last sub-pixel of unpin travel — with the continuous geometry both can hold at the same scroll
   // position. (With the P3 geometry t03 ≤ 0 only after E02 has fully left, so nothing changes there.)
@@ -69,6 +75,7 @@ export function mountPersistentWorld(coordinator: StoryCoordinator, mode: 'persi
   const slotElement = (slot: WorldSlot): Element | null => {
     if (slot === 'e02') return document.querySelector('.e02-canvas-root');
     if (slot === 'e03') return document.querySelector('.e03-canvas-root');
+    if (slot === 'e04') return document.querySelector('.e04-canvas-root');
     if (!boundaryLayer) {
       boundaryLayer = document.createElement('div');
       boundaryLayer.setAttribute('data-persistent-world-boundary', '');

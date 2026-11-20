@@ -6,6 +6,7 @@ import { subscribeSectionProgress } from '../../lib/story/progressSource';
 import { computePersistentWorldState, type PersistentWorldState } from '../../lib/story/persistentWorld';
 import { computeStableSignalAnchor, canvasDpr } from '../../lib/worldRuntime';
 import PhysicalWorldScene from '../experience-02/PhysicalWorldScene';
+import ObservationLayer, { ObservationProjector, createProjectionStore } from './ObservationLayer';
 
 /**
  * The ONE persistent physical-world canvas (P3: the visible renderer in the public default mode).
@@ -56,6 +57,8 @@ export default function PersistentWorldCanvas({
   const [snap, setSnap] = useState<StorySnapshot | null>(() => coordinator.getSnapshot());
   const [e02, setE02] = useState<ScrollProgressState>(INITIAL);
   const [e03, setE03] = useState<ScrollProgressState>(INITIAL);
+  const [e04, setE04] = useState<ScrollProgressState>(INITIAL);
+  const projection = useMemo(() => createProjectionStore(), []);
 
   useEffect(() => { ledger.canvasMounts++; }, [ledger]);
 
@@ -65,8 +68,11 @@ export default function PersistentWorldCanvas({
     const e03El = document.querySelector('[data-e03-section]');
     const h02 = e02El ? subscribeSectionProgress('world-e02', 'e02', e02El, setE02) : null;
     const h03 = e03El ? subscribeSectionProgress('world-e03', 'e03', e03El, setE03) : null;
-    return () => { offSnap(); h02?.destroy(); h03?.destroy(); };
-  }, [coordinator]);
+    // E04: the observation layer (information ABOUT the world) — only the visible persistent world draws it.
+    const e04El = mode === 'persistent' ? document.querySelector('[data-e04-section]') : null;
+    const h04 = e04El ? subscribeSectionProgress('world-e04', 'e04', e04El, setE04) : null;
+    return () => { offSnap(); h02?.destroy(); h03?.destroy(); h04?.destroy(); };
+  }, [coordinator, mode]);
 
   const isMobile = snap?.mode.isMobile ?? false;
   const [signalAnchor, setSignalAnchor] = useState<[number, number, number] | null>(null);
@@ -97,7 +103,11 @@ export default function PersistentWorldCanvas({
 
   if (!state || !signalAnchor) return null;
 
+  // E04 observation layer: active from the E03 → E04 handoff on (projection is written only on change).
+  const observing = mode === 'persistent' && !!snap && (snap.segment === 'e04-handoff' || snap.segment === 'e04');
+
   return (
+    <>
     <Canvas
       dpr={dpr}
       frameloop={frameloop}
@@ -113,6 +123,17 @@ export default function PersistentWorldCanvas({
         pointBudget={state.pointBudget}
       />
       <WorldProbe stamp={state} ledger={ledger} onGl={onGl} />
+      <ObservationProjector active={observing} isMobile={state.isMobile} store={projection} />
     </Canvas>
+    {mode === 'persistent' && (
+      <ObservationLayer
+        e04={e04}
+        isMobile={state.isMobile}
+        reducedMotion={snap?.mode.reducedMotion ?? false}
+        live={!!snap?.renderEligible.e04}
+        store={projection}
+      />
+    )}
+    </>
   );
 }

@@ -1,20 +1,404 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Header from '../components/Header.astro';
-import Experience01Void from '../components/Experience01Void.astro';
-import Experience02PhysicalWorld from '../components/experience-02/Experience02PhysicalWorld.astro';
-import Experience03Triad from '../components/experience-03/Experience03Triad.astro';
-import StoryCoordinator from '../components/StoryCoordinator.astro';
-import StoryGeometry from '../components/StoryGeometry.astro';
+import SiteHeader from '../components/SiteHeader.astro';
+
+// Single place to change the public contact address.
+const contactEmail = 'contact@angstdata.ai';
+const year = new Date().getFullYear();
+
+const domains = [
+  { n: '01', t: 'Life', d: 'Human presence, behaviour and interaction.' },
+  { n: '02', t: 'Machines', d: 'State, operation and physical behaviour.' },
+  { n: '03', t: 'Environments', d: 'Space, structure, context and changing conditions.' },
+];
+
+const kurtiq = [
+  { l: 'K', t: 'Knowledge', d: 'Context about people, machines and spaces that frames every observation.' },
+  { l: 'U', t: 'Uncertainty', d: 'Explicit treatment of what an observation can and cannot support.' },
+  { l: 'R', t: 'Reasoning', d: 'Relating observations to each other instead of scoring them in isolation.' },
+  { l: 'T', t: 'Temporal', d: 'Events understood as sequences that unfold over time.' },
+  { l: 'I', t: 'Intelligence', d: 'Structured understanding that supports human decisions.' },
+  { l: 'Q', t: 'Qualification', d: 'Every conclusion carries the conditions under which it holds.' },
+];
+
+const lifecycle = [
+  { t: 'Sense', d: 'Capture observations from cameras, sensors and operational systems.' },
+  { t: 'Correlate', d: 'Relate signals across people, machines, spaces and time.' },
+  { t: 'Understand', d: 'Form a qualified interpretation of what is taking place.' },
+  { t: 'Respond', d: 'Support people with context they can act on with confidence.' },
+  { t: 'Reconstruct', d: 'Rebuild how an event unfolded from the available evidence.' },
+  { t: 'Learn', d: 'Feed what was established back into future understanding.' },
+];
+
+const applications = [
+  { t: 'Industrial Intelligence & Assurance', d: 'Understanding interactions between workers, equipment and process conditions on industrial sites.' },
+  { t: 'Robotics & Autonomous Systems', d: 'Context for systems that share physical space with people and other machines.' },
+  { t: 'Perimeter & Critical Infrastructure Intelligence', d: 'Interpreting activity around sensitive assets as events, not isolated alerts.' },
+  { t: 'Mobility, Logistics & Transportation', d: 'Reasoning about movement, handling and interaction across moving operations.' },
+  { t: 'Infrastructure & Public Safety', d: 'Situational understanding for shared spaces, structures and public environments.' },
+  { t: 'Environmental & Spatial Intelligence', d: 'Relating changing conditions in space and structure to their physical consequences.' },
+];
+
+const research = [
+  'Spatial reconstruction',
+  'Temporal reasoning',
+  'Evidence uncertainty',
+  'Sensor fusion',
+  'Physics-informed simulation',
+  'Digital twins',
+  'Human-machine interaction',
+  'Event reconstruction',
+];
+
+const collab = [
+  { t: 'Industry', d: 'Operators with real physical-world safety questions.' },
+  { t: 'Research institutions', d: 'Academic work on perception, reasoning and uncertainty.' },
+  { t: 'Robotics & automation', d: 'Teams building systems that act in shared spaces.' },
+  { t: 'Sensors & instrumentation', d: 'Measurement that can establish what vision alone cannot.' },
+  { t: 'Simulation & digital twins', d: 'Environments for testing and validating reasoning.' },
+];
 ---
 
 <BaseLayout>
-  <Header />
-  <main>
-    <Experience01Void />
-    <Experience02PhysicalWorld />
-    <StoryGeometry />
-    <Experience03Triad />
+  <SiteHeader />
+
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="wrap hero__grid">
+        <div class="hero__copy">
+          <p class="eyebrow">ANGST</p>
+          <h1 id="hero-title" class="display">
+            Life. Machines. Environments.
+            <span class="display__muted">One Safety Intelligence Layer.</span>
+          </h1>
+          <p class="lead">
+            ANGST develops intelligence for understanding physical-world events across people, machines and
+            environments — connecting observations, context and evidence rather than treating them as isolated
+            signals.
+          </p>
+          <div class="actions">
+            <a class="btn btn--dark" href="#kurtiq">Explore KURTIQ</a>
+            <a class="btn btn--line" href="#collaborate">Collaborate with ANGST</a>
+          </div>
+        </div>
+
+        <figure class="field" aria-label="Diagram: life, machine and environment zones connected by relationship lines">
+          <svg viewBox="0 0 640 520" role="img" aria-hidden="true" focusable="false">
+            <defs>
+              <pattern id="g-sm" width="16" height="16" patternUnits="userSpaceOnUse">
+                <path d="M16 0H0V16" fill="none" stroke="#E8E8E5" stroke-width="0.6" />
+              </pattern>
+              <pattern id="g-lg" width="80" height="80" patternUnits="userSpaceOnUse">
+                <rect width="80" height="80" fill="url(#g-sm)" />
+                <path d="M80 0H0V80" fill="none" stroke="#DCDCD8" stroke-width="0.8" />
+              </pattern>
+            </defs>
+            <rect x="0.5" y="0.5" width="639" height="519" fill="#FFFFFF" stroke="#C9C9C5" />
+            <rect x="20" y="20" width="600" height="480" fill="url(#g-lg)" />
+
+            <!-- zones -->
+            <g fill="none" stroke="#191A1A" stroke-width="1">
+              <rect x="60" y="60" width="200" height="150" />
+              <rect x="380" y="60" width="200" height="190" />
+              <rect x="60" y="300" width="520" height="160" stroke-dasharray="4 4" />
+            </g>
+
+            <!-- relationship lines -->
+            <g class="field__links" fill="none" stroke="#8A8A86" stroke-width="1">
+              <path d="M260 135 L380 155" />
+              <path d="M160 210 L160 300" />
+              <path d="M480 250 L480 300" />
+              <path d="M200 210 C 260 260, 360 260, 420 250" />
+              <path d="M160 380 L320 380 L480 380" stroke-dasharray="2 4" />
+            </g>
+
+            <!-- nodes -->
+            <g fill="#050505">
+              <circle cx="260" cy="135" r="3" />
+              <circle cx="380" cy="155" r="3" />
+              <circle cx="160" cy="210" r="3" />
+              <circle cx="160" cy="300" r="3" />
+              <circle cx="480" cy="250" r="3" />
+              <circle cx="480" cy="300" r="3" />
+              <circle cx="320" cy="380" r="4" fill="#FFFFFF" stroke="#050505" />
+            </g>
+
+            <!-- zone content: minimal marks -->
+            <g fill="none" stroke="#191A1A" stroke-width="1">
+              <circle cx="125" cy="140" r="14" />
+              <circle cx="185" cy="155" r="10" />
+              <path d="M139 143 L175 153" stroke="#8A8A86" />
+              <rect x="420" y="110" width="70" height="44" />
+              <rect x="500" y="130" width="40" height="70" />
+              <path d="M455 154 V200 H500" stroke="#8A8A86" />
+              <path d="M100 430 L190 350 L260 400 L340 340 L420 410 L540 360" stroke="#8A8A86" />
+            </g>
+
+            <!-- labels -->
+            <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11" letter-spacing="1.5" fill="#191A1A">
+              <text x="70" y="80">01 · LIFE</text>
+              <text x="390" y="80">02 · MACHINE</text>
+              <text x="70" y="320">03 · ENVIRONMENT</text>
+              <text x="332" y="374" fill="#8A8A86">EVENT</text>
+            </g>
+            <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" letter-spacing="1" fill="#8A8A86">
+              <text x="24" y="14">FIELD / OBSERVATION · CONTEXT · EVIDENCE</text>
+              <text x="540" y="14">t → </text>
+              <text x="24" y="514">X 000</text>
+              <text x="580" y="514">X 600</text>
+            </g>
+          </svg>
+        </figure>
+      </div>
+    </section>
+
+    <!-- STATEMENT -->
+    <section class="section" aria-labelledby="stmt-title">
+      <div class="wrap">
+        <div class="statement">
+          <h2 id="stmt-title" class="h-xl">Reality does not happen in isolated alerts.</h2>
+          <p class="lead">
+            Physical events unfold through relationships between people, machines, spaces, time and evidence.
+            Understanding the event requires more than detecting individual objects or signals.
+          </p>
+        </div>
+        <ul class="cards cards--3" role="list">
+          {domains.map((c) => (
+            <li class="card card--tall">
+              <span class="card__num">{c.n}</span>
+              <h3 class="card__title card__title--caps">{c.t}</h3>
+              <p>{c.d}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- KURTIQ -->
+    <section class="section section--dark" id="kurtiq" aria-labelledby="kurtiq-title">
+      <div class="wrap">
+        <div class="split">
+          <div>
+            <p class="eyebrow eyebrow--inv">KURTIQ</p>
+            <h2 id="kurtiq-title" class="h-xl">Question Every Conclusion.</h2>
+          </div>
+          <div class="split__side">
+            <p class="lead lead--inv">
+              KURTIQ is ANGST's intelligence platform for reasoning across observations, uncertainty, time and
+              physical context.
+            </p>
+            <p class="kicker">Intelligence That Questions Its Own Conclusions.</p>
+          </div>
+        </div>
+
+        <ul class="kgrid" role="list" aria-label="The KURTIQ principles">
+          {kurtiq.map((k) => (
+            <li class="kcell">
+              <span class="kcell__letter" aria-hidden="true">{k.l}</span>
+              <h3 class="kcell__title">{k.t}</h3>
+              <p>{k.d}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- LIFECYCLE -->
+    <section class="section" id="lifecycle" aria-labelledby="life-title">
+      <div class="wrap">
+        <div class="statement">
+          <p class="eyebrow">How it reasons</p>
+          <h2 id="life-title" class="h-xl">From observation to understanding.</h2>
+        </div>
+        <ol class="rows" role="list">
+          {lifecycle.map((s, i) => (
+            <li class="row">
+              <span class="row__num">{String(i + 1).padStart(2, '0')}</span>
+              <h3 class="row__title">{s.t}</h3>
+              <p class="row__text">{s.d}</p>
+              <span class="row__track" aria-hidden="true">
+                {lifecycle.map((_, j) => (
+                  <i class={j < i ? 'is-past' : j === i ? 'is-now' : ''}></i>
+                ))}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- KURTIQ VISION -->
+    <section class="section section--soft" id="vision" aria-labelledby="vision-title">
+      <div class="wrap">
+        <div class="split">
+          <div>
+            <p class="lockup">
+              <span class="lockup__name">KURTIQ Vision</span>
+              <span class="lockup__by">by ANGST</span>
+            </p>
+            <h2 id="vision-title" class="h-xl">Beyond What Machines See.</h2>
+          </div>
+          <div class="split__side">
+            <p class="lead">
+              KURTIQ Vision is being developed around a simple principle: seeing an event is not the same as
+              proving what happened.
+            </p>
+          </div>
+        </div>
+
+        <ul class="cards cards--3 cards--line" role="list">
+          <li class="card card--white">
+            <span class="card__num">01</span>
+            <h3 class="card__title card__title--caps">Observe</h3>
+            <p>What visual systems can directly detect.</p>
+          </li>
+          <li class="card card--white">
+            <span class="card__num">02</span>
+            <h3 class="card__title card__title--caps">Question</h3>
+            <p>What those observations actually establish.</p>
+          </li>
+          <li class="card card--white">
+            <span class="card__num">03</span>
+            <h3 class="card__title card__title--caps">Qualify</h3>
+            <p>What still requires independent evidence or measurement.</p>
+          </li>
+        </ul>
+
+        <p class="fineprint">
+          Conceptual technology direction. Public website descriptions do not represent claims of validated
+          real-time deployment unless explicitly stated.
+        </p>
+      </div>
+    </section>
+
+    <!-- APPLICATIONS -->
+    <section class="section" id="applications" aria-labelledby="apps-title">
+      <div class="wrap">
+        <div class="statement">
+          <p class="eyebrow">Applications</p>
+          <h2 id="apps-title" class="h-xl">One intelligence layer.<br />Different physical worlds.</h2>
+        </div>
+        <ul class="cards cards--2" role="list">
+          {applications.map((a, i) => (
+            <li class={`card card--app ${i % 2 === 0 ? 'card--white card--bordered' : 'card--grey'}`}>
+              <span class="card__num">{String(i + 1).padStart(2, '0')}</span>
+              <h3 class="card__title">{a.t}</h3>
+              <p>{a.d}</p>
+            </li>
+          ))}
+        </ul>
+        <p class="fineprint">Application areas describe engineering direction, not existing deployments.</p>
+      </div>
+    </section>
+
+    <!-- RESEARCH -->
+    <section class="section section--black" id="research" aria-labelledby="res-title">
+      <div class="wrap">
+        <div class="split">
+          <div>
+            <p class="eyebrow eyebrow--inv">Research areas</p>
+            <h2 id="res-title" class="h-xl">Built for physical-world reasoning.</h2>
+          </div>
+          <div class="split__side">
+            <p class="lead lead--inv">
+              Our engineering direction combines perception with spatial, temporal and physical models. The areas
+              below are capabilities under development and active research.
+            </p>
+          </div>
+        </div>
+        <ul class="rgrid" role="list">
+          {research.map((r, i) => (
+            <li>
+              <span class="rgrid__num">{String(i + 1).padStart(2, '0')}</span>
+              <span class="rgrid__t">{r}</span>
+              <span class="rgrid__tag">Under development</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- COLLABORATE -->
+    <section class="section" id="collaborate" aria-labelledby="collab-title">
+      <div class="wrap">
+        <div class="split">
+          <div>
+            <p class="eyebrow">Collaborate</p>
+            <h2 id="collab-title" class="h-xl">Complex physical-world intelligence is multidisciplinary.</h2>
+          </div>
+          <div class="split__side">
+            <p class="lead">
+              ANGST is interested in working with organisations across industry, research, robotics, sensing,
+              simulation, engineering validation and applied safety intelligence.
+            </p>
+            <div class="actions">
+              <a class="btn btn--dark" href={`mailto:${contactEmail}?subject=Collaboration%20with%20ANGST`}>
+                Collaborate with ANGST
+              </a>
+            </div>
+          </div>
+        </div>
+        <ul class="clist" role="list">
+          {collab.map((c, i) => (
+            <li>
+              <span class="card__num">{String(i + 1).padStart(2, '0')}</span>
+              <h3>{c.t}</h3>
+              <p>{c.d}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- COMPANY -->
+    <section class="section section--soft" id="company" aria-labelledby="company-title">
+      <div class="wrap split">
+        <div>
+          <p class="eyebrow">Company</p>
+          <h2 id="company-title" class="h-lg">
+            Life. Machines. Environments.<br />
+            <span class="display__muted">One Safety Intelligence Layer.</span>
+          </h2>
+        </div>
+        <div class="split__side">
+          <p class="lead">
+            ANGST is building towards intelligence systems that reason about physical events across people,
+            machines and environments.
+          </p>
+          <p class="meta">ANGST Data Services India Pvt Ltd</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section section--black cta" id="contact" aria-labelledby="cta-title">
+      <div class="wrap">
+        <h2 id="cta-title" class="display display--inv">When Reality Bites,<br />We Byte Back.</h2>
+        <p class="lead lead--inv">Let's explore what physical-world intelligence can become.</p>
+        <div class="actions">
+          <a class="btn btn--light" href={`mailto:${contactEmail}?subject=Collaboration%20with%20ANGST`}>
+            Collaborate with ANGST
+          </a>
+          <a class="btn btn--line-inv" href={`mailto:${contactEmail}`}>Contact Us</a>
+        </div>
+      </div>
+    </section>
   </main>
-  <StoryCoordinator />
+
+  <footer class="ftr">
+    <div class="wrap ftr__inner">
+      <a class="ftr__brand" href="#top">ANGST</a>
+      <nav aria-label="Footer">
+        <ul>
+          <li><a href="#kurtiq">KURTIQ</a></li>
+          <li><a href="#applications">Applications</a></li>
+          <li><a href="#research">Research</a></li>
+          <li><a href="#collaborate">Collaborate</a></li>
+          <li><a href="#company">Company</a></li>
+        </ul>
+      </nav>
+      <p class="ftr__legal">© {year} ANGST Data Services India Pvt Ltd</p>
+    </div>
+  </footer>
 </BaseLayout>

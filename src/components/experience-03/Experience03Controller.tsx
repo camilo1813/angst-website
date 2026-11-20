@@ -107,7 +107,7 @@ export default function Experience03Controller() {
 
   const active = scrollState.isNear && tabVisible;
   const baseScene = useMemo(() => computeSceneValues(1, isMobile), [isMobile]);
-  const scene = buildExperience03Scene(baseScene, scrollState.progress);
+  const scene = buildExperience03Scene(baseScene, scrollState.progress, isMobile);
   const ambientAmplitude = computeAmbientAmplitude(baseScene.settleAmbient, reducedMotion, scrollState.isScrolling);
 
   if (!legacyCanvas || !webglOk || !signalAnchor) {

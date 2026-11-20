@@ -21,7 +21,7 @@ import {
 } from './geometry';
 import { describe, type SemanticDescriptor } from './semantics';
 
-export const STORY_COORDINATOR_VERSION = 'p2b-world-1';
+export const STORY_COORDINATOR_VERSION = 'e04-observation-1';
 
 export interface StorySnapshot {
   version: string;
@@ -29,9 +29,10 @@ export interface StorySnapshot {
   viewport: ViewportState;
   /** Runtime mode, owned here for every NEW consumer (the persistent world). Legacy canvases keep their own copies. */
   mode: { isMobile: boolean; reducedMotion: boolean; webgl: boolean; tabVisible: boolean; dpr: number };
-  sections: { e01: SectionGeometry; e02: SectionGeometry; e03: SectionGeometry };
-  progress: { e02: number; e03: number };
-  near: { e02: boolean; e03: boolean };
+  /** e04 is null on a page without Experience 04. */
+  sections: { e01: SectionGeometry; e02: SectionGeometry; e03: SectionGeometry; e04: SectionGeometry | null };
+  progress: { e02: number; e03: number; e04: number };
+  near: { e02: boolean; e03: boolean; e04: boolean };
   /** True until SCROLL_IDLE_MS after the last scroll event (same rule as the legacy controller). */
   scrolling: boolean;
   segment: Segment;
@@ -39,13 +40,14 @@ export interface StorySnapshot {
    * Render eligibility, same rule as the legacy canvases (`active = isNear && tabVisible`, WebGL
    * available): e02/e03 per section, `world` for one persistent canvas spanning both.
    */
-  renderEligible: { e02: boolean; e03: boolean; world: boolean };
-  activeSection: 'e01' | 'e02' | 'e03' | null;
+  renderEligible: { e02: boolean; e03: boolean; e04: boolean; world: boolean };
+  activeSection: 'e01' | 'e02' | 'e03' | 'e04' | null;
   semantic: SemanticDescriptor;
   /** Viewport-height dependence of the current state (see geometry.progressSensitivity). */
   viewportDependence: {
     e02: { perPxInnerHeight: number; perPxViewport: number };
     e03: { perPxInnerHeight: number; perPxViewport: number };
+    e04: { perPxInnerHeight: number; perPxViewport: number } | null;
     /** innerHeight change (px, svh fixed) that would flip the semantic label; null = no flip within ±160 px. Computed when idle. */
     flipMarginPx: { shrink: number | null; grow: number | null } | null;
   };
@@ -63,7 +65,7 @@ export interface StoryDiagnostics {
 }
 
 type Listener = (s: StorySnapshot) => void;
-export type StorySectionId = 'e02' | 'e03';
+export type StorySectionId = 'e02' | 'e03' | 'e04';
 
 interface SectionSubscription {
   id: StorySectionId;
@@ -112,7 +114,8 @@ export function createStoryCoordinator() {
     const e02 = measureSection('[data-e02-section]', 'e02');
     const e03 = measureSection('[data-e03-section]', 'e03');
     if (!e01 || !e02 || !e03) return false;
-    sections = { e01, e02, e03 };
+    const e04 = measureSection('[data-e04-section]', 'e04');
+    sections = { e01, e02, e03, e04 };
     const stage = document.querySelector('.e02-stage');
     svhPx = stage ? stage.getBoundingClientRect().height : window.innerHeight;
     diagnostics.measures++;
@@ -134,31 +137,35 @@ export function createStoryCoordinator() {
     const reducedMotion = rmMq.matches;
     const webgl = !document.documentElement.classList.contains('no-webgl');
     const tabVisible = document.visibilityState === 'visible';
-    const near = { e02: sectionNear(vp.scrollY, sections.e02, ih), e03: sectionNear(vp.scrollY, sections.e03, ih) };
+    const e04 = sections.e04;
+    const near = { e02: sectionNear(vp.scrollY, sections.e02, ih), e03: sectionNear(vp.scrollY, sections.e03, ih), e04: e04 ? sectionNear(vp.scrollY, e04, ih) : false };
     const p02 = sectionProgress(vp.scrollY, sections.e02, ih);
     const p03 = sectionProgress(vp.scrollY, sections.e03, ih);
-    const segment = segmentAt(vp.scrollY, sections.e02, sections.e03, ih);
-    const semantic = describe(segment, p02, p03, isMobile, reducedMotion);
+    const p04 = e04 ? sectionProgress(vp.scrollY, e04, ih) : 0;
+    const segment = segmentAt(vp.scrollY, sections.e02, sections.e03, ih, e04);
+    const semantic = describe(segment, p02, p03, isMobile, reducedMotion, p04);
     return {
       version: STORY_COORDINATOR_VERSION,
       frame: ++diagnostics.frames,
       viewport: vp,
       mode: { isMobile, reducedMotion, webgl, tabVisible, dpr: window.devicePixelRatio || 1 },
       sections,
-      progress: { e02: p02, e03: p03 },
+      progress: { e02: p02, e03: p03, e04: p04 },
       near,
       scrolling,
       segment,
       renderEligible: {
         e02: webgl && tabVisible && near.e02,
         e03: webgl && tabVisible && near.e03,
-        world: webgl && tabVisible && (near.e02 || near.e03),
+        e04: webgl && tabVisible && near.e04,
+        world: webgl && tabVisible && (near.e02 || near.e03 || near.e04),
       },
-      activeSection: segment === 'e01' ? 'e01' : segment === 'e02' ? 'e02' : segment === 'e03' ? 'e03' : null,
+      activeSection: segment === 'e01' ? 'e01' : segment === 'e02' ? 'e02' : segment === 'e03' ? 'e03' : segment === 'e04' ? 'e04' : null,
       semantic,
       viewportDependence: {
         e02: progressSensitivity(vp.scrollY, sections.e02, vp),
         e03: progressSensitivity(vp.scrollY, sections.e03, vp),
+        e04: e04 ? progressSensitivity(vp.scrollY, e04, vp) : null,
         flipMarginPx: null,
       },
     };
@@ -219,7 +226,8 @@ export function createStoryCoordinator() {
         const y = Math.min(s.viewport.scrollY, Math.max(0, docHeight - ih));
         const p02 = sectionProgress(y, secs.e02, ih);
         const p03 = sectionProgress(y, secs.e03, ih);
-        return describe(segmentAt(y, secs.e02, secs.e03, ih), p02, p03, s.mode.isMobile, s.mode.reducedMotion).label;
+        const p04 = secs.e04 ? sectionProgress(y, secs.e04, ih) : 0;
+        return describe(segmentAt(y, secs.e02, secs.e03, ih, secs.e04), p02, p03, s.mode.isMobile, s.mode.reducedMotion, p04).label;
       };
       snapshot = { ...s, viewportDependence: { ...s.viewportDependence, flipMarginPx: computeFlipMargin(labelAt, s.viewport.innerHeight, s.semantic.label) } };
     }, 250);
@@ -244,7 +252,7 @@ export function createStoryCoordinator() {
   // Synchronous: rAF is paused in a hidden tab, so a scheduled publish would never report 'hidden'.
   document.addEventListener('visibilitychange', publishNow);
   const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(remeasure) : null;
-  ['#the-void', '[data-e02-section]', '[data-e03-section]'].forEach((sel) => { const el = document.querySelector(sel); if (el && ro) ro.observe(el); });
+  ['#the-void', '[data-e02-section]', '[data-e03-section]', '[data-e04-section]'].forEach((sel) => { const el = document.querySelector(sel); if (el && ro) ro.observe(el); });
   window.addEventListener('load', remeasure, { once: true });
   document.fonts?.ready.then(remeasure).catch(() => {});
   schedule();

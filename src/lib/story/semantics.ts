@@ -7,6 +7,7 @@
 import { computeSceneValues } from '../sceneMaps';
 import { computeDominance, computeExperience03State } from '../experience03Maps';
 import type { Segment } from './geometry';
+import { phaseAt as e04PhaseAt, type E04Phase } from '../experience04Maps';
 
 export type E02Phase = 'forming' | 'formed';
 export type E03Phase = 'neutral' | 'life-focus' | 'machine-focus' | 'environment-focus' | 'relationship-statement';
@@ -25,12 +26,17 @@ export interface E03Semantics {
   statement: { supporting: number; payoff: number };
 }
 
+export interface E04Semantics {
+  phase: E04Phase | 'not-started';
+}
+
 export interface SemanticDescriptor {
   segment: Segment;
   /** Single human-readable label for the whole page state, e.g. "e02:forming", "e03:life-focus". */
   label: string;
   e02: E02Semantics;
   e03: E03Semantics;
+  e04: E04Semantics;
 }
 
 export function describeE02(p: number, isMobile: boolean): E02Semantics {
@@ -55,7 +61,7 @@ export function describeE03(p: number, isMobile: boolean): E03Semantics {
   return { phase, dominance: d, statement: { supporting: labels.statementPrimary, payoff: labels.statementFinal } };
 }
 
-export function describe(segment: Segment, p02: number, p03: number, isMobile: boolean, reducedMotion: boolean): SemanticDescriptor {
+export function describe(segment: Segment, p02: number, p03: number, isMobile: boolean, reducedMotion: boolean, p04 = 0): SemanticDescriptor {
   // Reduced motion: E02's local logic presents the settled world (progress 1) regardless of scroll.
   const e02 = describeE02(reducedMotion ? 1 : p02, isMobile);
   const e03 = describeE03(p03, isMobile);
@@ -65,7 +71,10 @@ export function describe(segment: Segment, p02: number, p03: number, isMobile: b
     case 'e02': label = `e02:${e02.phase}`; break;
     case 'legacy-transition': label = 'legacy-transition'; break;
     case 'e03': label = `e03:${e03.phase}`; break;
+    case 'e04-handoff': label = 'e04:handoff'; break;
+    case 'e04': label = `e04:${e04PhaseAt(p04)}`; break;
     default: label = 'after-e03';
   }
-  return { segment, label, e02, e03 };
+  const e04: E04Semantics = { phase: segment === 'e04' ? e04PhaseAt(p04) : 'not-started' };
+  return { segment, label, e02, e03, e04 };
 }

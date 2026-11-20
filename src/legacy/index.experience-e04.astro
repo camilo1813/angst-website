@@ -1,0 +1,23 @@
+---
+// ARCHIVED: previous cinematic homepage (E01–E04). Not routed. Move back to src/pages/ to restore.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Experience01Void from '../components/Experience01Void.astro';
+import Experience02PhysicalWorld from '../components/experience-02/Experience02PhysicalWorld.astro';
+import Experience03Triad from '../components/experience-03/Experience03Triad.astro';
+import Experience04Observation from '../components/experience-04/Experience04Observation.astro';
+import StoryCoordinator from '../components/StoryCoordinator.astro';
+import StoryGeometry from '../components/StoryGeometry.astro';
+---
+
+<BaseLayout>
+  <Header />
+  <main>
+    <Experience01Void />
+    <Experience02PhysicalWorld />
+    <StoryGeometry />
+    <Experience03Triad />
+    <Experience04Observation />
+  </main>
+  <StoryCoordinator />
+</BaseLayout>
