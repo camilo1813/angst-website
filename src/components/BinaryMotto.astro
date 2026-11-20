@@ -65,7 +65,7 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
     [null, null, null, '1'],
   ];
   const STATES = ['is-unify', 'is-when', 'is-reality', 'is-bit', 'is-we', 'is-byte', 'is-oct', 'is-back', 'is-link'];
-  const LK = ['is-enter', 'is-drop', 'is-pbit', 'is-pbyte', 'is-unify'];
+  const LK = ['is-enter', 'is-drop', 'is-pbit', 'is-pbyte', 'is-unify', 'is-peak'];
 
   const wait = (ms: number, s: Sig) =>
     new Promise<void>((res, rej) => setTimeout(() => (s.stop ? rej(0) : res()), ms));
@@ -110,11 +110,45 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
       requestAnimationFrame(() => lkOff('is-enter'));
     };
 
+    // ---- Stage zoom: one outer wrapper (.blk) is scaled; nothing inside changes size. ----
+    const zoomEl = lk;
+    const onStage = !!root.closest('[data-stage]');
+    const EASE_IN = 'cubic-bezier(0.22, 1, 0.36, 1)';
+    const EASE_OUT = 'cubic-bezier(0.4, 0, 0.2, 1)';
+    const curScale = () => {
+      const t = getComputedStyle(zoomEl).transform;
+      return t && t !== 'none' ? new DOMMatrixReadOnly(t).a : 1;
+    };
+    // Target from CSS (per viewport), clamped so the scaled lockup always keeps safe margins.
+    const peak = (name: string) => {
+      const want = parseFloat(getComputedStyle(zoomEl).getPropertyValue(name)) || 1;
+      const sc = curScale();
+      const r = zoomEl.getBoundingClientRect();
+      const w = r.width / sc, h = r.height / sc;
+      const stageEl = zoomEl.closest<HTMLElement>('[data-stage]');
+      const sh = stageEl ? stageEl.clientHeight : innerHeight;
+      const margin = Math.max(24, innerWidth * 0.03);
+      const fitW = (innerWidth - margin * 2) / w;
+      const fitH = (sh - 96) / h;
+      return Math.max(1, Math.min(want, fitW, fitH));
+    };
+    const zoomTo = (scale: number, ms: number, easing: string) => {
+      if (!onStage) return Promise.resolve();
+      const from = curScale();
+      zoomEl.getAnimations().forEach((a) => a.cancel());
+      const a = zoomEl.animate([{ transform: `scale(${from})` }, { transform: `scale(${scale})` }], {
+        duration: ms, easing, fill: 'forwards',
+      });
+      return a.finished.catch(() => undefined);
+    };
+    const zoomReset = () => zoomEl.getAnimations().forEach((a) => a.cancel());
+
     const reset = () => {
       paint(bitCh, null);
       paint(byteCh, null);
       off(...STATES);
       lk.classList.remove(...LK);
+      zoomReset();
       sigEl.getAnimations().forEach((a) => a.cancel());
       sigEl.style.opacity = '0';
       delete sigEl.dataset.d;
@@ -126,7 +160,8 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
       const rs = el.getClientRects();
       const a = rs[0] ?? el.getBoundingClientRect();
       const z = rs[rs.length - 1] ?? a;
-      return { l: a.left - o.left, r: z.right - o.left, t: a.top - o.top, b: z.bottom - o.top };
+      const k = 1 / curScale();
+      return { l: (a.left - o.left) * k, r: (z.right - o.left) * k, t: (a.top - o.top) * k, b: (z.bottom - o.top) * k };
     };
 
     // 1px pulse from one token to another, following a line wrap if there is one.
@@ -157,17 +192,32 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
       return anim.finished;
     };
 
-    async function sequence(s: Sig, replay = false) {
+    async function sequence(s: Sig, replay = false, entry = false) {
       try {
         let first = !replay;
         for (;;) {
-          if (first) {
-            // A — identity first: ANGST settles (≈300ms), clean lockup until 1.6s
+          if (first && entry && onStage) {
+            // Arrival: normal → zoom toward the viewer (ANGST 85% → full white) → settle → think.
+            phase = 'entry';
+            lkOn('is-enter');
+            await wait(200, s);
+            lkOff('is-enter');
+            lkOn('is-peak');
+            await zoomTo(peak('--zoom-entry'), 500, EASE_IN);
+            if (s.stop) throw 0;
+            await wait(250, s);
+            lkOff('is-peak');
+            await zoomTo(1, 550, EASE_OUT);
+            if (s.stop) throw 0;
+            await wait(250, s);
+          } else if (first) {
+            // Repeat loops: identity first, clean lockup until the sequence (no large zoom)
             phase = 'hold';
             wake();
             await wait(1350, s);
           }
           first = true;
+          entry = false;
           phase = 'active';
           // Link ANGST → motto: 1px drop meets the start of the WHEN timeline (≈250ms)
           lkOn('is-drop');
@@ -204,6 +254,8 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
           // BYTE — strongest binary transition + brief 8-cell structure (≈850ms); ANGST registers it (110ms)
           on('is-byte');
           pulse('is-pbyte', 110);
+          // Second, much smaller zoom: the intelligence response (held through BACK and link)
+          zoomTo(peak('--zoom-pulse'), 600, EASE_IN);
           for (let i = 0; i < BYTE_FRAMES.length; i++) {
             paint(byteCh, BYTE_FRAMES[i]);
             if (i === 4) on('is-oct');
@@ -231,23 +283,26 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
           off(...STATES);
           lkOn('is-unify');
           on('is-unify');
+          zoomTo(peak('--zoom-unify'), 350, EASE_IN);
           await wait(450, s);
           lkOff('is-unify');
           off('is-unify');
-          // Settle and clean static lockup (≈3s) — total loop ≈ 9.6s
+          await zoomTo(1, 700, EASE_OUT);
+          if (s.stop) throw 0;
+          // Clean static lockup — loop ≈ 10s (first loop ≈ 11.3s with the arrival zoom)
           phase = 'hold';
-          await wait(3000, s);
+          await wait(2600, s);
         }
       } catch {
         /* stopped */
       }
     }
 
-    const start = (replay = false) => {
+    const start = (replay = false, entry = false) => {
       if (run) run.stop = true;
       reset();
       run = { stop: false };
-      sequence(run, replay);
+      sequence(run, replay, entry);
     };
     const stop = () => {
       if (run) run.stop = true;
@@ -263,32 +318,31 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
     // in view (≥55%); stop only when it has nearly left (<15%) so small scrolls never restart it.
     const stage = root.closest<HTMLElement>('[data-stage]');
     const target = stage ?? root;
-    let entered = false;
-    if (stage && !reduce.matches) stage.classList.add('is-pre');
     new IntersectionObserver(
       (es) =>
         es.forEach((e) => {
           const r = e.intersectionRatio;
-          if (r >= 0.55 && !run && !reduce.matches) {
-            if (stage && !entered) {
-              // First arrival: the lockup settles toward the viewer, then the sequence begins.
-              entered = true;
-              stage.classList.remove('is-pre');
-            }
-            start();
-          } else if (r < 0.15 && run) stop();
+          // Arrival (after having substantially left) always plays the entry zoom once.
+          if (r >= 0.55 && !run && !reduce.matches) start(false, true);
+          else if (r < 0.15 && run) stop();
         }),
       { threshold: [0, 0.15, 0.55, 0.8] },
     ).observe(target);
-    reduce.addEventListener('change', () => reduce.matches && stage?.classList.remove('is-pre'));
 
     root.addEventListener('mouseenter', () => {
       if (run && phase === 'hold' && !reduce.matches && matchMedia('(hover: hover)').matches) start(true);
     });
-    reduce.addEventListener('change', () => (reduce.matches ? stop() : inView() && start()));
+    reduce.addEventListener('change', () => (reduce.matches ? stop() : inView() && start(false, true)));
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) return stop();
-      if (!run && !reduce.matches && inView()) start();
+      if (!run && !reduce.matches && inView()) start(false, true);
+    });
+    // Resizing mid-animation: return to normal scale and restart cleanly (debounced).
+    let rz = 0;
+    window.addEventListener('resize', () => {
+      if (!run) return;
+      clearTimeout(rz);
+      rz = window.setTimeout(() => (inView() ? start(true) : stop()), 250);
     });
   }
 

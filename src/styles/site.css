@@ -1034,10 +1034,17 @@ main { padding-top: var(--hdr); }
 .stage .blk {
   --wm: min(clamp(4rem, 13vw + 1.5rem, 22rem), 27vh);
   --wm: min(clamp(4rem, 13vw + 1.5rem, 22rem), 27svh);
-  transform-origin: 50% 55%;
-  transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transform-origin: 50% 50%;
+  /* Zoom targets (JS clamps each to the space actually available). */
+  --zoom-entry: 1.12;
+  --zoom-pulse: 1.03;
+  --zoom-unify: 1.05;
 }
-.stage.is-pre .blk { transform: scale(0.94); opacity: 0.8; transition: none; }
+@media (min-width: 600px) { .stage .blk { --zoom-entry: 1.14; --zoom-pulse: 1.04; --zoom-unify: 1.06; } }
+@media (min-width: 1000px) { .stage .blk { --zoom-entry: 1.18; --zoom-pulse: 1.05; --zoom-unify: 1.07; } }
+@media (min-width: 1800px) { .stage .blk { --zoom-entry: 1.21; --zoom-pulse: 1.05; --zoom-unify: 1.075; } }
+@media (min-width: 1000px) and (max-height: 800px) { .stage .blk { --zoom-entry: 1.13; --zoom-pulse: 1.04; --zoom-unify: 1.06; } }
+.blk.is-peak .blk__mark { color: #ffffff; transition: color 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
 .stage__frame { display: inline-block; }
 .stage .blk__mark { margin-right: -0.14em; } /* optical centring: drop trailing tracking */
 .stage__legal {
@@ -1051,5 +1058,5 @@ main { padding-top: var(--hdr); }
 .act__inner { border-top: 1px solid #1c1c1c; padding-top: clamp(40px, 6vw, 72px); }
 .act__lead { margin-top: 0; font-size: clamp(1.15rem, 1.8vw, 1.6rem); color: #c9c9c5; max-width: 34ch; }
 @media (prefers-reduced-motion: reduce) {
-  .stage .blk { transition: none !important; transform: none !important; opacity: 1 !important; }
+  .stage .blk { transform: none !important; }
 }
