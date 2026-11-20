@@ -25,6 +25,12 @@ const canonical = 'https://angstdata.ai/';
     <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#FFFFFF" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      // Safety net until "Enforce HTTPS" is active on GitHub Pages.
+      if (location.protocol === 'http:' && location.hostname.endsWith('angstdata.ai')) {
+        location.replace('https://angstdata.ai' + location.pathname + location.hash);
+      }
+    </script>
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ANGST" />

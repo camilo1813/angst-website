@@ -168,8 +168,8 @@ const matrix = [
                 <path d="M470 272 h16 v-16" />
               </g>
               <rect x="294" y="118" width="192" height="154" fill="none" stroke="#050505" stroke-width="1" stroke-dasharray="4 4" />
-              <g class="svg-lbl"><rect x="294" y="98" width="98" height="20" fill="#050505" />
-              <text class="svg-tag" x="302" y="112" fill="#FFFFFF">EVENT · E-01</text></g>
+              <g class="svg-lbl"><rect x="294" y="94" width="118" height="24" fill="#050505" />
+              <text class="svg-tag" x="302" y="111" fill="#FFFFFF">EVENT · E-01</text></g>
 
               <!-- observation markers -->
               <g stroke="#050505" stroke-width="1.2" fill="none">
@@ -185,12 +185,12 @@ const matrix = [
 
               <!-- entity labels (hidden on small screens; legend below carries them) -->
               <g class="svg-lbl svg-lbl--key">
-                <rect x="96" y="74" width="132" height="22" fill="#FFFFFF" stroke="#E2E2DE" />
-                <text x="104" y="89" fill="#1A1A1A">ENV · ZONE B</text>
-                <rect x="560" y="120" width="124" height="22" fill="#FFFFFF" stroke="#E2E2DE" />
-                <text x="568" y="135" fill="#1A1A1A">MACHINE · M-01</text>
-                <rect x="96" y="380" width="112" height="22" fill="#FFFFFF" stroke="#E2E2DE" />
-                <text x="104" y="395" fill="#1A1A1A">LIFE · L-02</text>
+                <rect x="96" y="72" width="150" height="26" fill="#FFFFFF" stroke="#E2E2DE" />
+                <text x="105" y="90" fill="#1A1A1A">ENV · ZONE B</text>
+                <rect x="548" y="118" width="160" height="26" fill="#FFFFFF" stroke="#E2E2DE" />
+                <text x="557" y="136" fill="#1A1A1A">MACHINE · M-01</text>
+                <rect x="96" y="378" width="130" height="26" fill="#FFFFFF" stroke="#E2E2DE" />
+                <text x="105" y="396" fill="#1A1A1A">LIFE · L-02</text>
               </g>
             </svg>
           </div>
@@ -200,6 +200,7 @@ const matrix = [
             <li><i class="lg lg--machine"></i>Machine</li>
             <li><i class="lg lg--env"></i>Environment</li>
             <li><i class="lg lg--event"></i>Event boundary</li>
+            <li class="console__illus">Illustrative</li>
           </ul>
 
           <dl class="console__foot" aria-hidden="true">
@@ -320,12 +321,16 @@ const matrix = [
 
         <!-- Why KURTIQ: intellectual origin -->
         <article class="origin" aria-labelledby="why-title">
+          <div class="origin__head">
+            <p class="eyebrow eyebrow--inv">Why KURTIQ?</p>
+            <h3 id="why-title" class="h-md">Inspired by Kurt Gödel.</h3>
+          </div>
           <figure class="origin__fig">
             <!-- Source: Wikimedia Commons, "File:1925 kurt gödel.png", photographer unknown, c. 1924–1927, public domain. Converted to greyscale WebP. -->
             <img
               src="/images/kurt-goedel-1925.webp"
-              width="320"
-              height="400"
+              width="397"
+              height="496"
               alt="Kurt Gödel, portrait photograph, c. 1925"
               loading="lazy"
               decoding="async"
@@ -333,8 +338,6 @@ const matrix = [
             <figcaption>Kurt Gödel, c. 1925. Public domain, via Wikimedia Commons.</figcaption>
           </figure>
           <div class="origin__body">
-            <p class="eyebrow eyebrow--inv">Why KURTIQ?</p>
-            <h3 id="why-title" class="h-md">Inspired by Kurt Gödel.</h3>
             <p class="origin__lead">
               KURTIQ takes its name from a tradition of rigorous questioning. It applies that discipline to
               physical-world intelligence.
@@ -518,8 +521,8 @@ const matrix = [
                 <path d="M110 262 h-14 v-14" /><path d="M396 262 h14 v-14" />
               </g>
               <rect x="96" y="120" width="314" height="142" fill="none" stroke="#FFFFFF" stroke-dasharray="4 5" stroke-opacity="0.6" />
-              <rect x="96" y="98" width="96" height="22" fill="#FFFFFF" />
-              <text class="svg-tag" x="104" y="113" fill="#050505">REGION R-1</text>
+              <rect x="96" y="94" width="116" height="26" fill="#FFFFFF" />
+              <text class="svg-tag svg-tag--lg" x="104" y="112" fill="#050505">REGION R-1</text>
               <!-- crosshair -->
               <g stroke="#FFFFFF" stroke-opacity="0.75"><path d="M240 20 V40 M240 300 V280 M20 160 H40 M460 160 H440" /></g>
               <!-- unresolved marker -->
