@@ -57,5 +57,5 @@ Recommended: verify the domain under GitHub → Settings (account/org) → Pages
 Propagation: minutes to a few hours. Check with `nslookup angstdata.ai`.
 
 ## Notes
-- Contact buttons use `contact@angstdata.ai` (set in `src/pages/index.astro`, `contactEmail`). Make sure that mailbox exists or change it.
+- All contact / collaboration actions use `mailto:info@angstdata.in` (set once in `src/pages/index.astro`, `contactEmail`; also in `src/components/SiteHeader.astro` mobile menu).
 - Previous cinematic homepage is archived at `src/legacy/index.experience-e04.astro` (not routed). All experience components are untouched.

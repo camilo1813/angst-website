@@ -11,7 +11,7 @@ const links = [
 
 <header class="hdr" id="top">
   <div class="hdr__inner wrap">
-    <a class="hdr__brand" href="#top" aria-label="ANGST — home">ANGST</a>
+    <a class="hdr__brand" href="#main" aria-label="ANGST — back to top">ANGST</a>
 
     <nav class="hdr__nav" aria-label="Primary">
       <ul>
@@ -21,26 +21,59 @@ const links = [
     </nav>
 
     <details class="mnav">
-      <summary aria-label="Menu">
+      <summary aria-controls="mnav-panel">
         <span class="mnav__icon" aria-hidden="true"></span>
-        <span class="mnav__label">Menu</span>
+        <span class="mnav__label mnav__label--open">Menu</span>
+        <span class="mnav__label mnav__label--close">Close</span>
       </summary>
-      <nav class="mnav__panel" aria-label="Mobile">
-        {links.map((l) => <a href={l.href}>{l.label}</a>)}
-        <a class="btn btn--dark" href="#contact">Contact</a>
+      <nav class="mnav__panel" id="mnav-panel" aria-label="Mobile">
+        <ul>
+          {links.map((l, i) => (
+            <li>
+              <a href={l.href}>
+                <span class="mnav__idx" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                {l.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <a class="btn btn--dark mnav__cta" href="#contact">Contact</a>
+        <p class="mnav__mail"><a href="mailto:info@angstdata.in">info@angstdata.in</a></p>
       </nav>
     </details>
   </div>
 </header>
 
 <script>
-  const hdr = document.querySelector('.hdr');
+  const hdr = document.querySelector<HTMLElement>('.hdr');
   const menu = document.querySelector<HTMLDetailsElement>('.mnav');
-  const onScroll = () => hdr?.classList.toggle('is-scrolled', window.scrollY > 8);
+  const summary = menu?.querySelector('summary');
+
+  const onScroll = () => hdr?.classList.toggle('is-scrolled', window.scrollY > 4);
   onScroll();
   window.addEventListener('scroll', onScroll, { passive: true });
-  menu?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => menu.removeAttribute('open')));
+
+  const sync = () => {
+    const open = !!menu?.open;
+    document.documentElement.classList.toggle('menu-open', open);
+    summary?.setAttribute('aria-expanded', String(open));
+  };
+  menu?.addEventListener('toggle', sync);
+  sync();
+
+  menu?.querySelectorAll('a').forEach((a) =>
+    a.addEventListener('click', () => {
+      menu.open = false;
+    }),
+  );
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && menu?.open) menu.removeAttribute('open');
+    if (e.key === 'Escape' && menu?.open) {
+      menu.open = false;
+      summary?.focus();
+    }
+  });
+  // Close the overlay if the viewport grows past the mobile breakpoint.
+  window.matchMedia('(min-width: 1081px)').addEventListener('change', (m) => {
+    if (m.matches && menu) menu.open = false;
   });
 </script>
