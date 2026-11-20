@@ -1,9 +1,18 @@
 ---
 /**
- * ANGST motto with a restrained bit/byte transition.
- * - Screen readers get one stable string (visually hidden span).
- * - The visible copy is aria-hidden and fully readable without JavaScript.
- * - Only "it" in "Bites" and "Byte" in "Byte Back" receive the digital state.
+ * ANGST motto — semantic intelligence animation.
+ *
+ * Each part of the motto has its own behaviour:
+ *   When     → temporal: a 1px timeline t₀ → t₁ draws above the word
+ *   Reality  → observation: measurement corners, grey (uncertain) letters, a faint "?"
+ *   B·it·es  → BIT: "it" passes through 0/1 states (digital encoding of the event)
+ *   We       → reasoning: two evidence points converge, "∴" appears briefly
+ *   Byte     → BYTE: strongest binary transition + a brief 8-cell structure (8 bits = 1 byte)
+ *   Back     → response: a faint echo converges into the word, underline returns right→left
+ *   ™        → static, never animated
+ *
+ * Screen readers get one stable string; every visual layer is aria-hidden.
+ * Without JavaScript, or with reduced motion, the motto is shown statically.
  */
 interface Props {
   id?: string;
@@ -11,38 +20,36 @@ interface Props {
 }
 const { id, class: className = '' } = Astro.props;
 const motto = 'When Reality Bites, We Byte Back™';
+const reality = 'Reality'.split('');
+const octet = [0, 1, 0, 1, 1, 0, 0, 1];
 ---
 
 <h2 id={id} class={`motto ${className}`} data-motto>
   <span class="motto__sr">{motto}</span>
   <span class="motto__vis" aria-hidden="true">
-    <span>When Reality </span><span class="motto__word"
-      >B<span class="motto__tok motto__tok--bit" data-tok="bit"
+    <span class="mw mw--when">When<span class="m-tl"><i class="m-t0">t₀</i><i class="m-t1">t₁</i></span></span>
+    <span class="mw mw--reality">{reality.map((c) => <span class="m-rc">{c}</span>)}<span class="m-obs"></span><i class="m-q">?</i></span>
+    <span class="mw" data-bites>B<span class="motto__tok motto__tok--bit" data-tok="bit"
         ><span class="motto__ch">i</span><span class="motto__ch">t</span></span
       ><span data-after-bit>es,</span></span
     ><br />
-    <span data-before-byte>We </span><span class="motto__tok motto__tok--byte" data-tok="byte"
+    <span class="mw mw--we" data-before-byte>We<i class="m-cv m-cv--l"></i><i class="m-cv m-cv--r"></i><i class="m-th">∴</i></span>
+    <span class="motto__tok motto__tok--byte" data-tok="byte"
       ><span class="motto__ch">B</span><span class="motto__ch">y</span><span class="motto__ch">t</span><span
         class="motto__ch">e</span
-      ></span
-    > Back<sup class="motto__tm">™</sup>
+      ><span class="m-oct">{octet.map((b) => <i class={b ? 'on' : ''}></i>)}</span></span
+    >
+    <span class="mw mw--back" data-text="Back">Back</span><sup class="motto__tm">™</sup>
     <span class="motto__sig"></span>
   </span>
 </h2>
 
 <script>
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-
   type Frame = (string | null)[];
+  type Sig = { stop: boolean };
 
-  // Digit states per character (null = original glyph). Short, legible, never the whole word.
-  const BIT_FRAMES: Frame[] = [
-    ['1', null],
-    ['1', '0'],
-    ['0', '1'],
-    ['1', '0'],
-    [null, '1'],
-  ];
+  const BIT_FRAMES: Frame[] = [['1', null], ['1', '0'], ['0', '1'], ['1', '0'], [null, '1']];
   const BYTE_FRAMES: Frame[] = [
     ['0', null, null, null],
     ['0', '1', null, null],
@@ -51,164 +58,183 @@ const motto = 'When Reality Bites, We Byte Back™';
     ['1', null, null, '0'],
     [null, null, null, '1'],
   ];
+  const STATES = ['is-when', 'is-reality', 'is-bit', 'is-we', 'is-byte', 'is-oct', 'is-back', 'is-link'];
 
-  const wait = (ms: number, sig: { stop: boolean }) =>
-    new Promise<void>((res, rej) => setTimeout(() => (sig.stop ? rej(new Error('stop')) : res()), ms));
+  const wait = (ms: number, s: Sig) =>
+    new Promise<void>((res, rej) => setTimeout(() => (s.stop ? rej(0) : res()), ms));
 
   function setup(root: HTMLElement) {
-    const bit = root.querySelector<HTMLElement>('[data-tok="bit"]')!;
-    const byte = root.querySelector<HTMLElement>('[data-tok="byte"]')!;
-    const afterBit = root.querySelector<HTMLElement>('[data-after-bit]')!;
-    const beforeByte = root.querySelector<HTMLElement>('[data-before-byte]')!;
-    const sigEl = root.querySelector<HTMLElement>('.motto__sig')!;
-    const vis = root.querySelector<HTMLElement>('.motto__vis')!;
+    const q = <T extends HTMLElement>(sel: string) => root.querySelector<T>(sel)!;
+    const vis = q('.motto__vis');
+    const sigEl = q('.motto__sig');
+    const bit = q('[data-tok="bit"]');
+    const byte = q('[data-tok="byte"]');
+    const bites = q('[data-bites]');
+    const afterBit = q('[data-after-bit]');
+    const we = q('[data-before-byte]');
+    const reality = q('.mw--reality');
     const bitCh = [...bit.querySelectorAll<HTMLElement>('.motto__ch')];
     const byteCh = [...byte.querySelectorAll<HTMLElement>('.motto__ch')];
 
-    let run: { stop: boolean } | null = null;
+    let run: Sig | null = null;
     let phase = 'idle';
 
     const paint = (chars: HTMLElement[], f: Frame | null) =>
       chars.forEach((c, i) => {
         const d = f ? f[i] : null;
-        if (d) {
-          c.dataset.d = d;
-          c.classList.add('is-d');
-        } else {
-          c.classList.remove('is-d');
-          delete c.dataset.d;
-        }
+        c.classList.toggle('is-d', !!d);
+        if (d) c.dataset.d = d;
+        else delete c.dataset.d;
       });
+
+    const on = (...c: string[]) => root.classList.add(...c);
+    const off = (...c: string[]) => root.classList.remove(...c);
 
     const reset = () => {
       paint(bitCh, null);
       paint(byteCh, null);
-      root.classList.remove('is-bit', 'is-byte', 'is-link');
+      off(...STATES);
       sigEl.getAnimations().forEach((a) => a.cancel());
       sigEl.style.opacity = '0';
+      delete sigEl.dataset.d;
       phase = 'idle';
     };
 
-    const rel = (el: HTMLElement) => {
+    const box = (el: HTMLElement) => {
       const o = vis.getBoundingClientRect();
-      const rects = el.getClientRects();
-      const r = rects[rects.length - 1] ?? el.getBoundingClientRect();
-      const f = rects[0] ?? r;
-      return { l: f.left - o.left, r: r.right - o.left, b: r.bottom - o.top, top: f.top - o.top };
+      const rs = el.getClientRects();
+      const a = rs[0] ?? el.getBoundingClientRect();
+      const z = rs[rs.length - 1] ?? a;
+      return { l: a.left - o.left, r: z.right - o.left, t: a.top - o.top, b: z.bottom - o.top };
     };
 
-    // 1px signal travelling from BIT to BYTE, following line wraps.
-    const travel = (ms: number) => {
-      const a = rel(bit), e = rel(afterBit), w = rel(beforeByte), y = rel(byte);
-      const line = Math.max(1, Math.round(parseFloat(getComputedStyle(root).fontSize) * 0.03));
-      sigEl.style.height = `${line}px`;
-      const yA = a.b - line * 2, yB = y.b - line * 2;
-      const sameLine = Math.abs(a.top - y.top) < 4;
-      const len = Math.max(18, (a.r - a.l) * 0.6);
-      const kf: Keyframe[] = sameLine
-        ? [
-            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0 },
-            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0.8, offset: 0.15 },
-            { transform: `translate(${y.l - len}px, ${yB}px)`, width: `${len}px`, opacity: 0.8, offset: 0.85 },
-            { transform: `translate(${y.l}px, ${yB}px)`, width: '0px', opacity: 0 },
-          ]
-        : [
-            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0 },
-            { transform: `translate(${a.l}px, ${yA}px)`, width: `${len}px`, opacity: 0.8, offset: 0.1 },
-            { transform: `translate(${e.r - len}px, ${yA}px)`, width: `${len}px`, opacity: 0.8, offset: 0.45 },
-            { transform: `translate(${e.r}px, ${yA}px)`, width: '0px', opacity: 0, offset: 0.5 },
-            { transform: `translate(${w.l}px, ${yB}px)`, width: '0px', opacity: 0, offset: 0.52 },
-            { transform: `translate(${w.l}px, ${yB}px)`, width: `${len}px`, opacity: 0.8, offset: 0.6 },
-            { transform: `translate(${y.l - len}px, ${yB}px)`, width: `${len}px`, opacity: 0.8, offset: 0.92 },
-            { transform: `translate(${y.l}px, ${yB}px)`, width: '0px', opacity: 0 },
-          ];
-      return sigEl.animate(kf, { duration: ms, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }).finished;
+    // 1px pulse from one token to another, following a line wrap if there is one.
+    // lineEnd: element ending the source line; lineStart: element starting the target line.
+    const travel = (from: HTMLElement, lineEnd: HTMLElement, lineStart: HTMLElement, to: HTMLElement, ms: number, digits?: string[]) => {
+      const a = box(from), e = box(lineEnd), w = box(lineStart), y = box(to);
+      const fs = parseFloat(getComputedStyle(root).fontSize);
+      const h = Math.max(1, Math.round(fs * 0.025));
+      sigEl.style.height = `${h}px`;
+      const ya = a.b - h * 2, yb = y.b - h * 2;
+      const len = Math.max(14, fs * 0.3);
+      const at = (x: number, yy: number, wd: number, op: number, offset?: number): Keyframe => ({
+        transform: `translate(${x}px, ${yy}px)`, width: `${wd}px`, opacity: op, ...(offset !== undefined ? { offset } : {}),
+      });
+      const kf: Keyframe[] =
+        Math.abs(a.t - y.t) < 4
+          ? [at(a.l, ya, len, 0), at(a.l, ya, len, 0.75, 0.15), at(y.l - len, yb, len, 0.75, 0.85), at(y.l, yb, 0, 0)]
+          : [
+              at(a.l, ya, len, 0), at(a.l, ya, len, 0.75, 0.1), at(e.r - len, ya, len, 0.75, 0.45), at(e.r, ya, 0, 0, 0.5),
+              at(w.l, yb, 0, 0, 0.52), at(w.l, yb, len, 0.75, 0.6), at(y.l - len, yb, len, 0.75, 0.92), at(y.l, yb, 0, 0),
+            ];
+      const anim = sigEl.animate(kf, { duration: ms, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' });
+      // Optional tiny binary state riding on the pulse (BIT → BYTE only).
+      if (digits?.length) {
+        digits.forEach((d, i) => setTimeout(() => (sigEl.dataset.d = d), (ms / (digits.length + 1)) * (i + 0.5)));
+        setTimeout(() => delete sigEl.dataset.d, ms * 0.92);
+      }
+      return anim.finished;
     };
 
-    async function sequence(sig: { stop: boolean }, startAtActive = false) {
+    async function sequence(s: Sig, replay = false) {
       try {
-        if (!startAtActive) {
+        if (!replay) {
           phase = 'hold';
-          await wait(1800, sig);
+          await wait(1600, s);
         }
         for (;;) {
-          // 02 — BIT recognition (~700ms)
           phase = 'active';
-          root.classList.add('is-bit');
-          for (const f of BIT_FRAMES) {
-            paint(bitCh, f);
-            await wait(120, sig);
-          }
+          // WHEN — temporal: t₀ → t₁ (≈400ms)
+          on('is-when');
+          await wait(400, s);
+          off('is-when');
+
+          // REALITY — observed, partly uncertain (≈450ms) then pulse toward BITES (≈250ms)
+          on('is-reality');
+          await wait(450, s);
+          off('is-reality');
+          await travel(reality, reality, bites, bit, 250);
+          if (s.stop) throw 0;
+
+          // BIT — binary encoding inside "Bites" (≈700ms)
+          on('is-bit');
+          for (const f of BIT_FRAMES) { paint(bitCh, f); await wait(120, s); }
           paint(bitCh, null);
-          await wait(100, sig);
+          await wait(100, s);
 
-          // 03 — signal travel (~420ms)
-          await travel(420);
-          if (sig.stop) throw new Error('stop');
+          // WE — evidence converges, reasoning (≈400ms)
+          on('is-we');
+          await wait(400, s);
+          off('is-we');
 
-          // 04 — BYTE recognition (~840ms)
-          root.classList.add('is-byte');
-          for (const f of BYTE_FRAMES) {
-            paint(byteCh, f);
-            await wait(130, sig);
+          // Signal BIT → BYTE with a riding 0 / 1 / 01 (≈400ms)
+          await travel(bit, afterBit, we, byte, 400, ['0', '1', '01']);
+          if (s.stop) throw 0;
+
+          // BYTE — strongest binary transition + brief 8-cell structure (≈850ms)
+          on('is-byte');
+          for (let i = 0; i < BYTE_FRAMES.length; i++) {
+            paint(byteCh, BYTE_FRAMES[i]);
+            if (i === 4) on('is-oct');
+            await wait(130, s);
           }
           paint(byteCh, null);
-          await wait(60, sig);
+          off('is-oct');
+          await wait(70, s);
 
-          // 05 — relationship: matched pulse on both (~400ms)
-          root.classList.add('is-link');
+          // BACK — response / reconstruction echo (≈550ms)
+          on('is-back');
+          await wait(550, s);
+          off('is-back');
+
+          // BIT + BYTE synchronised (≈500ms)
+          on('is-link');
           paint(bitCh, [null, '1']);
           paint(byteCh, [null, null, null, '1']);
-          await wait(160, sig);
+          await wait(170, s);
           paint(bitCh, null);
           paint(byteCh, null);
-          await wait(240, sig);
+          await wait(330, s);
 
-          // 06 — settle (~500ms) and hold (~2.2s)
-          root.classList.remove('is-bit', 'is-byte', 'is-link');
-          await wait(500, sig);
+          // Settle (≈500ms) and hold (≈2.3s) — total loop ≈ 9s
+          off(...STATES);
+          await wait(500, s);
           phase = 'hold';
-          await wait(2200, sig);
-          await wait(0, sig);
+          await wait(2300, s);
         }
       } catch {
         /* stopped */
       }
     }
 
-    const start = (atActive = false) => {
+    const start = (replay = false) => {
       if (run) run.stop = true;
       reset();
       run = { stop: false };
-      sequence(run, atActive);
+      sequence(run, replay);
     };
     const stop = () => {
       if (run) run.stop = true;
       run = null;
       reset();
     };
+    const inView = () => {
+      const r = root.getBoundingClientRect();
+      return r.bottom > 0 && r.top < window.innerHeight;
+    };
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting && !reduce.matches) {
-            if (!run) start();
-          } else stop();
-        }
-      },
+    new IntersectionObserver(
+      (es) => es.forEach((e) => (e.isIntersecting && !reduce.matches ? !run && start() : stop())),
       { threshold: 0.4 },
-    );
-    io.observe(root);
+    ).observe(root);
 
-    // Desktop: hovering during the quiet hold replays the transition once (same intensity).
     root.addEventListener('mouseenter', () => {
-      if (run && phase === 'hold' && !reduce.matches && window.matchMedia('(hover: hover)').matches) start(true);
+      if (run && phase === 'hold' && !reduce.matches && matchMedia('(hover: hover)').matches) start(true);
     });
-    reduce.addEventListener('change', () => (reduce.matches ? stop() : null));
+    reduce.addEventListener('change', () => (reduce.matches ? stop() : inView() && start()));
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) return stop();
-      const r = root.getBoundingClientRect();
-      if (!run && !reduce.matches && r.bottom > 0 && r.top < window.innerHeight) start();
+      if (!run && !reduce.matches && inView()) start();
     });
   }
 

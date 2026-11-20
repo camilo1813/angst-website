@@ -838,71 +838,147 @@ main { padding-top: var(--hdr); }
 .nowrap { white-space: nowrap; }
 
 /* ---------- binary motto ---------- */
-.motto { --m-text: #f5f5f2; --m-dim: #858581; --m-sec: #a5a5a0; --m-bin: #d9d9d4; color: var(--m-text); }
+/* Palette: white/off-white = established state; greys = uncertainty / incomplete evidence. */
+.motto { --m-text: #f5f5f2; --m-dim: #858581; --m-sec: #a5a5a0; --m-bin: #d9d9d4; --m-lbl: max(10px, 0.15em); color: var(--m-text); }
 .motto__sr {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
 .motto__vis { position: relative; display: block; }
-.motto__tok { position: relative; }
-.motto__tok::after {
-  content: '';
+.mw, .motto__tok { position: relative; }
+.motto__vis i { font-style: normal; user-select: none; }
+.m-tl, .m-obs, .m-oct, .motto__sig { user-select: none; }
+
+/* shared micro-label (t₀, t₁, ?, ∴) */
+.m-t0, .m-t1, .m-q, .m-th, .motto__sig::after {
   position: absolute;
-  left: 0.02em;
-  right: 0.02em;
-  bottom: 0.02em;
-  height: 1px;
-  background: var(--m-sec);
-  transform: scaleX(0);
-  transform-origin: left center;
+  font-size: var(--m-lbl);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--m-sec);
   opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s linear;
+}
+
+/* WHEN — temporal: timeline t₀ → t₁ above the word */
+.m-tl {
+  position: absolute; left: 0.02em; right: 0.04em; top: -0.02em; height: 1px;
+  background: var(--m-dim);
+  transform: scaleX(0); transform-origin: left center;
+  transition: transform 0.34s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.m-t0 { left: 0; bottom: 4px; }
+.m-t1 { right: 0; bottom: 4px; transform: translateX(50%); }
+.m-tl::before, .m-tl::after { content: ''; position: absolute; top: -3px; width: 1px; height: 7px; background: var(--m-dim); opacity: 0; transition: opacity 0.12s linear; }
+.m-tl::before { left: 0; }
+.m-tl::after { right: 0; }
+.motto.is-when .m-tl { transform: scaleX(1); }
+.motto.is-when .m-tl::before, .motto.is-when .m-t0 { opacity: 1; }
+.motto.is-when .m-tl::after, .motto.is-when .m-t1 { opacity: 1; transition-delay: 0.26s; }
+
+/* REALITY — observed, not perfectly known */
+.m-rc { transition: color 0.16s linear; }
+.motto.is-reality .m-rc:nth-child(2) { color: var(--m-sec); transition-delay: 0.04s; }
+.motto.is-reality .m-rc:nth-child(4) { color: var(--m-dim); transition-delay: 0.1s; }
+.motto.is-reality .m-rc:nth-child(5) { color: var(--m-sec); transition-delay: 0.16s; }
+.motto.is-reality .m-rc:nth-child(7) { color: var(--m-dim); transition-delay: 0.22s; }
+.m-obs { position: absolute; inset: 0.1em -0.05em 0.02em -0.05em; pointer-events: none; }
+.m-obs::before, .m-obs::after {
+  content: ''; position: absolute; width: 0.14em; height: 0.14em; min-width: 8px; min-height: 8px;
+  border: 0 solid var(--m-sec); opacity: 0; transition: opacity 0.14s linear;
+}
+.m-obs::before { left: 0; top: 0; border-left-width: 1px; border-top-width: 1px; }
+.m-obs::after { right: 0; bottom: 0; border-right-width: 1px; border-bottom-width: 1px; }
+.motto.is-reality .m-obs::before, .motto.is-reality .m-obs::after { opacity: 1; }
+.m-q { right: -0.02em; top: 0.02em; transform: translateX(100%); color: var(--m-dim); }
+.motto.is-reality .m-q { opacity: 0.85; transition-delay: 0.18s; }
+
+/* BIT / BYTE tokens */
+.motto__tok::after {
+  content: ''; position: absolute; left: 0.02em; right: 0.02em; bottom: 0.02em; height: 1px;
+  background: var(--m-sec); transform: scaleX(0); transform-origin: left center; opacity: 0;
   transition: transform 0.38s var(--ease), opacity 0.38s var(--ease), background-color 0.3s var(--ease);
 }
-.motto.is-bit .motto__tok--bit::after,
-.motto.is-byte .motto__tok--byte::after { transform: scaleX(1); opacity: 0.7; }
+.motto.is-bit .motto__tok--bit::after, .motto.is-byte .motto__tok--byte::after { transform: scaleX(1); opacity: 0.7; }
 .motto.is-byte .motto__tok--byte::after { background: var(--m-text); opacity: 0.85; }
-.motto.is-link .motto__tok::after { opacity: 1; background: var(--m-bin); }
+.motto.is-oct .motto__tok--byte::after { opacity: 0; }
+.motto.is-link .motto__tok::after { transform: scaleX(1); opacity: 1; background: var(--m-bin); }
 
 .motto__ch { position: relative; transition: color 0.09s linear; }
 .motto__ch.is-d { color: rgba(245, 245, 242, 0.1); }
 .motto__ch.is-d::before {
-  content: attr(data-d);
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  transform: translate(-50%, -50%);
-  font-family: var(--font);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.7em;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  color: var(--m-bin);
-  pointer-events: none;
+  content: attr(data-d); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font-family: var(--font); font-variant-numeric: tabular-nums; font-size: 0.7em; font-weight: 500;
+  letter-spacing: -0.02em; line-height: 1; color: var(--m-bin); pointer-events: none;
 }
 .motto__tok--byte .motto__ch.is-d::before { color: var(--m-text); }
 
+/* BYTE — 8 cells = 1 byte (structural reference only, not an encoding) */
+.m-oct {
+  position: absolute; left: 0.04em; right: 0.04em; bottom: -0.06em; height: max(4px, 0.05em);
+  display: flex; gap: max(2px, 0.03em); opacity: 0; transition: opacity 0.1s linear; pointer-events: none;
+}
+.m-oct i { flex: 1; border: 1px solid var(--m-sec); }
+.m-oct i.on { background: var(--m-text); border-color: var(--m-text); }
+.motto.is-oct .m-oct { opacity: 1; }
+
+/* WE — reasoning: evidence converges, ∴ */
+.m-cv {
+  position: absolute; top: 50%; width: max(4px, 0.06em); height: max(4px, 0.06em); border-radius: 50%;
+  background: var(--m-sec); opacity: 0; pointer-events: none;
+}
+.m-cv--l { left: 0; transform: translate(-0.55em, -50%); }
+.m-cv--r { right: 0; transform: translate(0.2em, -50%); }
+.motto.is-we .m-cv { animation: m-converge 0.4s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.motto.is-we .m-cv--l { --from: -0.55em; --to: -0.1em; }
+.motto.is-we .m-cv--r { --from: 0.2em; --to: 0.02em; }
+@keyframes m-converge {
+  0% { opacity: 0; transform: translate(var(--from), -50%); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(var(--to), -50%); }
+}
+.m-th { left: -0.3em; top: 52%; transform: translate(-50%, -50%); }
+.motto.is-we .m-th { opacity: 0.9; transition-delay: 0.12s; }
+.mw--we { transition: color 0.2s linear; }
+.motto.is-we .mw--we { color: #ffffff; }
+
+/* BACK — response / reconstruction echo + underline returning right → left */
+.mw--back::before {
+  content: attr(data-text); position: absolute; left: 0; top: 0; z-index: -1;
+  color: var(--m-dim); opacity: 0; pointer-events: none;
+}
+.mw--back { isolation: isolate; }
+.mw--back::after {
+  content: ''; position: absolute; left: 0.02em; right: 0.02em; bottom: 0.02em; height: 1px;
+  background: var(--m-sec); transform: scaleX(0); transform-origin: right center; opacity: 0;
+}
+.motto.is-back .mw--back::before { animation: m-echo 0.55s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.motto.is-back .mw--back::after { animation: m-return 0.55s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes m-echo {
+  0% { opacity: 0; transform: translateX(3px); }
+  35% { opacity: 0.6; transform: translateX(3px); }
+  100% { opacity: 0; transform: translateX(0); }
+}
+@keyframes m-return {
+  0% { opacity: 0; transform: scaleX(0); }
+  40% { opacity: 0.7; }
+  70% { opacity: 0.7; transform: scaleX(1); }
+  100% { opacity: 0; transform: scaleX(1); }
+}
+
+/* ™ — static */
 .motto__tm {
-  font-size: 0.26em;
-  font-weight: 500;
-  letter-spacing: 0;
-  line-height: 0;
-  vertical-align: 0;
-  position: relative;
-  top: -1.9em;
-  margin-left: 0.12em;
-  color: var(--m-bin);
+  font-size: 0.26em; font-weight: 500; letter-spacing: 0; line-height: 0; vertical-align: 0;
+  position: relative; top: -1.9em; margin-left: 0.12em; color: var(--m-bin);
 }
-.motto__sig {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 0;
-  height: 1px;
-  background: var(--m-sec);
-  opacity: 0;
-  pointer-events: none;
-}
+
+/* travelling 1px signal (+ tiny riding digit on BIT → BYTE) */
+.motto__sig { position: absolute; left: 0; top: 0; width: 0; height: 1px; background: var(--m-sec); opacity: 0; pointer-events: none; }
+.motto__sig::after { content: attr(data-d); right: 0; bottom: 4px; color: var(--m-bin); }
+.motto__sig[data-d]::after { opacity: 1; transition-duration: 0.06s; }
+
 @media (prefers-reduced-motion: reduce) {
-  .motto__ch.is-d::before, .motto__sig { display: none; }
+  .motto__vis *::before, .motto__vis *::after, .motto__sig, .m-tl, .m-q, .m-th, .m-cv, .m-oct, .m-obs { display: none !important; }
 }
