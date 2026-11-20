@@ -723,11 +723,18 @@ const matrix = [
       </div>
     </section>
 
-    <!-- ============ CTA ============ -->
-    <section class="section section--black cta" id="contact" aria-labelledby="cta-title">
-      <div class="wrap">
+    <!-- ============ BRAND STAGE (full-screen) ============ -->
+    <section class="stage" data-stage aria-labelledby="cta-title">
+      <div class="stage__frame">
         <BinaryMotto id="cta-title" class="display display--inv" wordmark />
-        <p class="lead lead--inv">Let's explore what physical-world intelligence can become.</p>
+      </div>
+      <p class="stage__legal">ANGST Data Services India Pvt Ltd</p>
+    </section>
+
+    <!-- ============ ACTION ============ -->
+    <section class="section section--black act" id="contact" aria-label="Contact">
+      <div class="wrap act__inner">
+        <p class="lead lead--inv act__lead">Let's explore what physical-world intelligence can become.</p>
         <div class="actions">
           <a class="btn btn--light" href={mailCollab}>Collaborate with ANGST</a>
           <a class="btn btn--line-inv" href={mailContact}>Contact Us</a>

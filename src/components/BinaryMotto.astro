@@ -134,7 +134,7 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
     const travel = (from: HTMLElement, lineEnd: HTMLElement, lineStart: HTMLElement, to: HTMLElement, ms: number, digits?: string[]) => {
       const a = box(from), e = box(lineEnd), w = box(lineStart), y = box(to);
       const fs = parseFloat(getComputedStyle(root).fontSize);
-      const h = Math.max(1, Math.round(fs * 0.025));
+      const h = fs > 64 ? 1.5 : 1; // hairline at every scale
       sigEl.style.height = `${h}px`;
       const ya = a.b - h * 2, yb = y.b - h * 2;
       const len = Math.max(14, fs * 0.3);
@@ -256,13 +256,31 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
     };
     const inView = () => {
       const r = root.getBoundingClientRect();
-      return r.bottom > 0 && r.top < window.innerHeight;
+      return r.top >= 0 && r.bottom <= window.innerHeight;
     };
 
+    // Observe the full-screen stage when present. Start only when the stage is substantially
+    // in view (≥55%); stop only when it has nearly left (<15%) so small scrolls never restart it.
+    const stage = root.closest<HTMLElement>('[data-stage]');
+    const target = stage ?? root;
+    let entered = false;
+    if (stage && !reduce.matches) stage.classList.add('is-pre');
     new IntersectionObserver(
-      (es) => es.forEach((e) => (e.isIntersecting && !reduce.matches ? !run && start() : stop())),
-      { threshold: 0.4 },
-    ).observe(root);
+      (es) =>
+        es.forEach((e) => {
+          const r = e.intersectionRatio;
+          if (r >= 0.55 && !run && !reduce.matches) {
+            if (stage && !entered) {
+              // First arrival: the lockup settles toward the viewer, then the sequence begins.
+              entered = true;
+              stage.classList.remove('is-pre');
+            }
+            start();
+          } else if (r < 0.15 && run) stop();
+        }),
+      { threshold: [0, 0.15, 0.55, 0.8] },
+    ).observe(target);
+    reduce.addEventListener('change', () => reduce.matches && stage?.classList.remove('is-pre'));
 
     root.addEventListener('mouseenter', () => {
       if (run && phase === 'hold' && !reduce.matches && matchMedia('(hover: hover)').matches) start(true);

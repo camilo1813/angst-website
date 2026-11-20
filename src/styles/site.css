@@ -984,17 +984,17 @@ main { padding-top: var(--hdr); }
 }
 
 /* ---------- ANGST brand lockup (wordmark + motto) ---------- */
-.blk { --lk-gap: clamp(14px, 1.7vw, 28px); --lk-rest: #ebebe7; }
+.blk { --wm: clamp(3.4rem, 10vw, 9rem); --lk-gap: max(16px, calc(var(--wm) * 0.17)); --lk-rest: #ebebe7; }
 .blk__mark {
   margin: 0;
   font-weight: 700;
-  font-size: clamp(3.4rem, 10vw, 9rem);
+  font-size: var(--wm);
   line-height: 0.92;
   letter-spacing: 0.14em;
   color: var(--lk-rest);
   transition: color 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.blk .motto { margin-top: var(--lk-gap); font-size: clamp(1.9rem, 4.3vw, 3.95rem); line-height: 1.02; transition: color 0.3s linear; }
+.blk .motto { margin-top: var(--lk-gap); font-size: calc(var(--wm) * 0.44); line-height: 1.02; transition: color 0.3s linear; }
 .blk--bare .motto { margin-top: 0; }
 .blk.is-enter .blk__mark { color: #c8c8c4; transition: none; }
 .blk.is-pbit .blk__mark { color: #f7f7f4; transition-duration: 0.06s; }
@@ -1016,4 +1016,40 @@ main { padding-top: var(--hdr); }
 @media (prefers-reduced-motion: reduce) {
   .blk__mark, .blk .motto { transition: none !important; }
   .blk__drop { display: none !important; }
+}
+
+/* ---------- full-screen brand stage ---------- */
+.stage {
+  position: relative;
+  background: var(--black);
+  color: var(--white);
+  min-height: calc(100vh - var(--hdr));
+  min-height: calc(100svh - var(--hdr));
+  display: grid;
+  place-items: center;
+  padding: clamp(40px, 7svh, 96px) var(--gutter) clamp(72px, 12svh, 140px);
+  overflow: hidden;
+}
+/* One fluid size drives the lockup: width-led, capped by available height. */
+.stage .blk {
+  --wm: min(clamp(4rem, 13vw + 1.5rem, 22rem), 27vh);
+  --wm: min(clamp(4rem, 13vw + 1.5rem, 22rem), 27svh);
+  transform-origin: 50% 55%;
+  transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.stage.is-pre .blk { transform: scale(0.94); opacity: 0.8; transition: none; }
+.stage__frame { display: inline-block; }
+.stage .blk__mark { margin-right: -0.14em; } /* optical centring: drop trailing tracking */
+.stage__legal {
+  position: absolute; left: 0; right: 0; bottom: clamp(20px, 4svh, 44px);
+  margin: 0; text-align: center;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: #6f6f6b;
+}
+/* action area after the stage — continues the black, then the light footer */
+.act { padding-block: clamp(56px, 9vw, 120px) clamp(72px, 11vw, 150px); }
+.act__inner { border-top: 1px solid #1c1c1c; padding-top: clamp(40px, 6vw, 72px); }
+.act__lead { margin-top: 0; font-size: clamp(1.15rem, 1.8vw, 1.6rem); color: #c9c9c5; max-width: 34ch; }
+@media (prefers-reduced-motion: reduce) {
+  .stage .blk { transition: none !important; transform: none !important; opacity: 1 !important; }
 }
