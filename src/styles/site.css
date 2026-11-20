@@ -478,7 +478,7 @@ main { padding-top: var(--hdr); }
   height: auto;
   aspect-ratio: 4 / 5;
   object-fit: cover;
-  filter: grayscale(1);
+  object-position: 50% 22%;
   border: 1px solid #3a3a3a;
   border-radius: 6px;
   background: #222;
