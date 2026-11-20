@@ -17,14 +17,19 @@
 interface Props {
   id?: string;
   class?: string;
+  /** Render the ANGST wordmark above the motto as one brand lockup. */
+  wordmark?: boolean;
 }
-const { id, class: className = '' } = Astro.props;
+const { id, class: className = '', wordmark = false } = Astro.props;
 const motto = 'When Reality Bites, We Byte Back™';
 const reality = 'Reality'.split('');
 const octet = [0, 1, 0, 1, 1, 0, 0, 1];
 ---
 
+<div class={wordmark ? 'blk' : 'blk blk--bare'} data-lockup>
+{wordmark && <p class="blk__mark">ANGST</p>}
 <h2 id={id} class={`motto ${className}`} data-motto>
+  {wordmark && <span class="blk__drop" aria-hidden="true"></span>}
   <span class="motto__sr">{motto}</span>
   <span class="motto__vis" aria-hidden="true">
     <span class="mw mw--when">When<span class="m-tl"><i class="m-t0">t₀</i><i class="m-t1">t₁</i></span></span>
@@ -43,6 +48,7 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
     <span class="motto__sig"></span>
   </span>
 </h2>
+</div>
 
 <script>
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -58,7 +64,8 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
     ['1', null, null, '0'],
     [null, null, null, '1'],
   ];
-  const STATES = ['is-when', 'is-reality', 'is-bit', 'is-we', 'is-byte', 'is-oct', 'is-back', 'is-link'];
+  const STATES = ['is-unify', 'is-when', 'is-reality', 'is-bit', 'is-we', 'is-byte', 'is-oct', 'is-back', 'is-link'];
+  const LK = ['is-enter', 'is-drop', 'is-pbit', 'is-pbyte', 'is-unify'];
 
   const wait = (ms: number, s: Sig) =>
     new Promise<void>((res, rej) => setTimeout(() => (s.stop ? rej(0) : res()), ms));
@@ -89,11 +96,25 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
 
     const on = (...c: string[]) => root.classList.add(...c);
     const off = (...c: string[]) => root.classList.remove(...c);
+    const lk = root.closest<HTMLElement>('[data-lockup]')!;
+    const hasMark = !!lk.querySelector('.blk__mark');
+    const lkOn = (c: string) => hasMark && lk.classList.add(c);
+    const lkOff = (c: string) => lk.classList.remove(c);
+    // Brief wordmark brightness pulse (ANGST observing the process).
+    const pulse = (c: string, ms: number) => { lkOn(c); setTimeout(() => lkOff(c), ms); };
+    // Phase A: ANGST rises from ~85% to resting brightness.
+    const wake = () => {
+      if (!hasMark) return;
+      lk.classList.add('is-enter');
+      void lk.offsetWidth;
+      requestAnimationFrame(() => lkOff('is-enter'));
+    };
 
     const reset = () => {
       paint(bitCh, null);
       paint(byteCh, null);
       off(...STATES);
+      lk.classList.remove(...LK);
       sigEl.getAnimations().forEach((a) => a.cancel());
       sigEl.style.opacity = '0';
       delete sigEl.dataset.d;
@@ -138,12 +159,20 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
 
     async function sequence(s: Sig, replay = false) {
       try {
-        if (!replay) {
-          phase = 'hold';
-          await wait(1600, s);
-        }
+        let first = !replay;
         for (;;) {
+          if (first) {
+            // A — identity first: ANGST settles (≈300ms), clean lockup until 1.6s
+            phase = 'hold';
+            wake();
+            await wait(1350, s);
+          }
+          first = true;
           phase = 'active';
+          // Link ANGST → motto: 1px drop meets the start of the WHEN timeline (≈250ms)
+          lkOn('is-drop');
+          await wait(250, s);
+          lkOff('is-drop');
           // WHEN — temporal: t₀ → t₁ (≈400ms)
           on('is-when');
           await wait(400, s);
@@ -156,8 +185,9 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
           await travel(reality, reality, bites, bit, 250);
           if (s.stop) throw 0;
 
-          // BIT — binary encoding inside "Bites" (≈700ms)
+          // BIT — binary encoding inside "Bites" (≈700ms); ANGST registers it (80ms)
           on('is-bit');
+          pulse('is-pbit', 80);
           for (const f of BIT_FRAMES) { paint(bitCh, f); await wait(120, s); }
           paint(bitCh, null);
           await wait(100, s);
@@ -171,8 +201,9 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
           await travel(bit, afterBit, we, byte, 400, ['0', '1', '01']);
           if (s.stop) throw 0;
 
-          // BYTE — strongest binary transition + brief 8-cell structure (≈850ms)
+          // BYTE — strongest binary transition + brief 8-cell structure (≈850ms); ANGST registers it (110ms)
           on('is-byte');
+          pulse('is-pbyte', 110);
           for (let i = 0; i < BYTE_FRAMES.length; i++) {
             paint(byteCh, BYTE_FRAMES[i]);
             if (i === 4) on('is-oct');
@@ -196,11 +227,16 @@ const octet = [0, 1, 0, 1, 1, 0, 0, 1];
           paint(byteCh, null);
           await wait(330, s);
 
-          // Settle (≈500ms) and hold (≈2.3s) — total loop ≈ 9s
+          // Unified lockup: ANGST + whole motto share one brightness (≈450ms)
           off(...STATES);
-          await wait(500, s);
+          lkOn('is-unify');
+          on('is-unify');
+          await wait(450, s);
+          lkOff('is-unify');
+          off('is-unify');
+          // Settle and clean static lockup (≈3s) — total loop ≈ 9.6s
           phase = 'hold';
-          await wait(2300, s);
+          await wait(3000, s);
         }
       } catch {
         /* stopped */

@@ -982,3 +982,38 @@ main { padding-top: var(--hdr); }
 @media (prefers-reduced-motion: reduce) {
   .motto__vis *::before, .motto__vis *::after, .motto__sig, .m-tl, .m-q, .m-th, .m-cv, .m-oct, .m-obs { display: none !important; }
 }
+
+/* ---------- ANGST brand lockup (wordmark + motto) ---------- */
+.blk { --lk-gap: clamp(14px, 1.7vw, 28px); --lk-rest: #ebebe7; }
+.blk__mark {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(3.4rem, 10vw, 9rem);
+  line-height: 0.92;
+  letter-spacing: 0.14em;
+  color: var(--lk-rest);
+  transition: color 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.blk .motto { margin-top: var(--lk-gap); font-size: clamp(1.9rem, 4.3vw, 3.95rem); line-height: 1.02; transition: color 0.3s linear; }
+.blk--bare .motto { margin-top: 0; }
+.blk.is-enter .blk__mark { color: #c8c8c4; transition: none; }
+.blk.is-pbit .blk__mark { color: #f7f7f4; transition-duration: 0.06s; }
+.blk.is-pbyte .blk__mark { color: #ffffff; transition-duration: 0.06s; }
+.blk.is-unify .blk__mark, .motto.is-unify { color: #ffffff; transition-duration: 0.2s; }
+/* 1px drop from ANGST into the start of the WHEN timeline */
+.blk__drop {
+  position: absolute; left: 0.03em; bottom: 100%; width: 1px; height: calc(var(--lk-gap) + 0.04em);
+  background: var(--m-dim); transform: scaleY(0); transform-origin: top center; opacity: 0;
+  pointer-events: none; user-select: none;
+}
+.blk .motto { position: relative; }
+.blk.is-drop .blk__drop { animation: lk-drop 0.25s cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes lk-drop {
+  0% { opacity: 0.9; transform: scaleY(0); }
+  80% { opacity: 0.9; transform: scaleY(1); }
+  100% { opacity: 0; transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blk__mark, .blk .motto { transition: none !important; }
+  .blk__drop { display: none !important; }
+}
