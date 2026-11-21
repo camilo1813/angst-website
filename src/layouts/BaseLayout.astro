@@ -31,6 +31,10 @@ const canonical = 'https://angstdata.ai/';
         location.replace('https://angstdata.ai' + location.pathname + location.hash);
       }
     </script>
+    <script is:inline>
+      // Opt into motion before first paint. Without JS or with reduced motion the page renders its final, settled state.
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('motion-ready');
+    </script>
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ANGST" />

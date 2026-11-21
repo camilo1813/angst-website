@@ -19,6 +19,25 @@
   --gap-head: clamp(48px, 6vw, 88px);
   --radius: 14px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Motion system — evidence tones (dark sections) */
+  --ev-supported: #f5f5f2;   /* supported · active · current · qualified */
+  --ev-probable: #d9d9d4;    /* correlated · probable · emerging */
+  --ev-uncertain: #a5a5a0;   /* uncertain · incomplete · not qualified (→ #858581) */
+  --ev-inactive: #3a3a3a;    /* inactive · unobserved · background */
+  --ev-unknown: #050505;     /* unknown · outside current evidence */
+  /* inverted equivalents on light sections */
+  --evl-supported: #050505;
+  --evl-probable: #555653;
+  --evl-uncertain: #8d8d88;
+  --evl-inactive: #c9c9c5;
+  --evl-unknown: #ffffff;
+  /* timing */
+  --t-micro: 160ms;
+  --t-small: 350ms;
+  --t-section: 600ms;
+  --ease-std: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (max-width: 600px) {
@@ -371,8 +390,6 @@ main { padding-top: var(--hdr); }
 .svg-tag--lg { font-size: 14px; }
 .svg-mini { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; }
 
-.trail { animation: trail 2.8s linear infinite; }
-@keyframes trail { to { stroke-dashoffset: -14; } }
 
 @media (max-width: 1360px) {
   .console__meta--opt { display: none; }
@@ -1059,4 +1076,137 @@ main { padding-top: var(--hdr); }
 .act__lead { margin-top: 0; font-size: clamp(1.15rem, 1.8vw, 1.6rem); color: #c9c9c5; max-width: 34ch; }
 @media (prefers-reduced-motion: reduce) {
   .stage .blk { transform: none !important; }
+}
+
+/* =====================================================================
+   PHASE 1 — Hero observation motion
+   Everything below runs only under .motion-ready (set before first paint)
+   and with no reduced-motion preference. The default markup IS the final
+   state, so no-JS / reduced-motion visitors see the complete hero.
+   ===================================================================== */
+.hx-pill { display: inline-grid; justify-items: center; align-items: center; }
+.hx-st { grid-area: 1 / 1; }
+.hx-st--1, .hx-st--2 { visibility: hidden; }      /* final state: QUALIFIED */
+.hx-pill { background: var(--black); color: var(--white); border-color: var(--black); }
+.hx-w { position: relative; }
+.console__field { position: relative; }
+.console__scan { position: absolute; inset: 0; pointer-events: none; opacity: 0; }
+.console__scan::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: var(--evl-probable); opacity: 0.55; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* --- hero copy: tone resolves (inactive → supported), marks appear and leave --- */
+  .motion-ready .hx-eyebrow { animation: hx-fadetone 0.4s var(--ease-std) 0.2s both; }
+  .motion-ready .hx-w { animation: hx-tone 0.4s var(--ease-std) both; }
+  .motion-ready .hx-w--life { animation-delay: 0.6s; }
+  .motion-ready .hx-w--mach { animation-delay: 1s; animation-duration: 0.3s; }
+  .motion-ready .hx-w--env { animation-delay: 1.3s; animation-duration: 0.3s; }
+
+  /* Life — organic presence: one soft pulse beside the word */
+  .motion-ready .hx-w--life::after {
+    content: ''; position: absolute; right: -0.17em; top: 0.18em;
+    width: max(5px, 0.065em); height: max(5px, 0.065em); border-radius: 50%;
+    background: var(--evl-supported); opacity: 0; pointer-events: none;
+    animation: hx-presence 1.3s var(--ease-settle) 0.6s both;
+  }
+  /* Machines — deterministic alignment: a tick steps into register above the word */
+  .motion-ready .hx-w--mach::before,
+  .motion-ready .hx-w--mach::after {
+    content: ''; position: absolute; left: 0.02em; background: var(--evl-supported); opacity: 0; pointer-events: none;
+    animation: hx-align 1.05s steps(4, end) 1s both;
+  }
+  .motion-ready .hx-w--mach::before { top: -0.06em; width: 0.42em; height: 1px; }
+  .motion-ready .hx-w--mach::after { top: -0.14em; width: 1px; height: 0.09em; }
+  /* Environments — spatial: registration corners settle around the word */
+  .motion-ready .hx-w--env::before,
+  .motion-ready .hx-w--env::after {
+    content: ''; position: absolute; top: 0.04em; width: 0.16em; height: 0.16em;
+    border: 0 solid var(--evl-supported); opacity: 0; pointer-events: none;
+    animation: hx-register 1.1s var(--ease-settle) 1.3s both;
+  }
+  .motion-ready .hx-w--env::before { left: -0.07em; border-left-width: 1px; border-top-width: 1px; --dx: -5px; }
+  .motion-ready .hx-w--env::after { right: -0.07em; border-right-width: 1px; border-top-width: 1px; --dx: 5px; }
+
+  /* "One Safety Intelligence Layer." resolves last, with a hard clip edge (no gradient blend) */
+  .motion-ready .hx-muted {
+    background: linear-gradient(90deg, var(--mid) 50%, var(--evl-inactive) 50%) 100% 0 / 200% 100% no-repeat;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    animation: hx-edge 0.45s var(--ease-std) 2s both;
+  }
+  .motion-ready .hx-lead { animation: hx-rise 0.45s var(--ease-std) 0.45s both; }
+  .motion-ready .hx-actions { animation: hx-rise 0.45s var(--ease-std) 0.65s both; }
+
+  /* --- event panel construction (≈0.2s → 2.6s) --- */
+  .motion-ready .hx-zone { stroke-dasharray: 1; animation: hx-draw 0.4s var(--ease-std) 0.2s both; }
+  .motion-ready .hx-keys { animation: hx-in 0.3s linear 0.45s both; }
+  .motion-ready .hx-trail { animation: hx-in 0.4s linear 0.6s both; }
+  .motion-ready .hx-tp { animation: hx-in 0.15s linear both; animation-delay: calc(0.6s + var(--i) * 0.08s); }
+  .motion-ready .hx-now { animation: hx-in 0.25s var(--ease-std) 0.9s both; }
+  .motion-ready .hx-o1 { animation: hx-in 0.2s linear 0.95s both; }
+  .motion-ready .hx-machine { animation: hx-in 0.25s linear 1s both; }
+  .motion-ready .hx-arm { transform-box: view-box; transform-origin: 520px 205px; animation: hx-arm 0.35s steps(3, end) 1.05s both; }
+  .motion-ready .hx-cam { animation: hx-in 0.3s linear 1.3s both; }
+  .motion-ready .hx-ctx { animation: hx-in 0.3s linear 1.35s both; }
+  .motion-ready .hx-o2 { animation: hx-in 0.2s linear 1.45s both; }
+  .motion-ready .hx-o3 { animation: hx-in 0.2s linear 1.55s both; }
+  .motion-ready .hx-prox { stroke-dasharray: 1; animation: hx-draw 0.25s var(--ease-std) 1.6s both; }
+  .motion-ready .hx-prox-lbl { animation: hx-in 0.2s linear 1.75s both; }
+  .motion-ready .hx-ev-c { transform-box: view-box; transform-origin: 390px 195px; animation: hx-frame 0.35s var(--ease-settle) 1.7s both; }
+  .motion-ready .hx-ev-r, .motion-ready .hx-ev-tag { animation: hx-in 0.25s linear 1.85s both; }
+  .motion-ready .hx-foot dd { animation: hx-tone 0.3s var(--ease-std) both; }
+  .motion-ready .hx-foot div:nth-child(1) dd { animation-delay: 2s; }
+  .motion-ready .hx-foot div:nth-child(2) dd { animation-delay: 2.1s; }
+  .motion-ready .hx-foot div:nth-child(3) dd { animation-delay: 2.2s; }
+  .motion-ready .hx-foot div:nth-child(4) dd { animation-delay: 2.3s; }
+
+  /* status pill: (none) → OBSERVED 1.1s → CORRELATED 1.9s → QUALIFIED 2.5s; fixed width (stacked) */
+  .motion-ready .hx-pill { animation: hx-pill 2.6s linear both; }
+  .motion-ready .hx-st--1 { animation: hx-st1 2.6s linear both; }
+  .motion-ready .hx-st--2 { animation: hx-st2 2.6s linear both; }
+  .motion-ready .hx-st--3 { animation: hx-st3 2.6s linear both; }
+
+  /* quiet observation scan — scheduled by hero.ts every 8s while visible */
+  .motion-ready .console__field.is-scan .console__scan { animation: hx-scan 1.6s var(--ease-std) both; }
+}
+
+@keyframes hx-tone { from { color: var(--evl-inactive); } }
+@keyframes hx-fadetone { from { color: var(--evl-inactive); opacity: 0.6; } }
+@keyframes hx-in { from { opacity: 0; } }
+@keyframes hx-rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes hx-draw { from { stroke-dashoffset: 1; fill-opacity: 0; } }
+@keyframes hx-edge { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@keyframes hx-arm { from { opacity: 0; transform: rotate(-9deg); } 34% { opacity: 1; } }
+@keyframes hx-frame { from { opacity: 0; transform: scale(1.05); } }
+@keyframes hx-presence {
+  0% { opacity: 0; transform: scale(0.4); }
+  25% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.75; transform: scale(1.35); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@keyframes hx-align {
+  0% { opacity: 0; transform: translateX(-8px); }
+  8% { opacity: 1; transform: translateX(-8px); }
+  40% { opacity: 1; transform: translateX(0); }
+  80% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(0); }
+}
+@keyframes hx-register {
+  0% { opacity: 0; transform: translate(var(--dx), -5px); }
+  35% { opacity: 1; transform: translate(0, 0); }
+  75% { opacity: 1; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(0, 0); }
+}
+@keyframes hx-pill {
+  0%, 42% { background: transparent; color: var(--mid); border-color: var(--evl-inactive); border-style: dashed; }
+  43%, 72% { background: transparent; color: var(--evl-probable); border-color: var(--mid); border-style: solid; }
+  73%, 95% { background: transparent; color: var(--ink-2); border-color: var(--black); border-style: solid; }
+}
+@keyframes hx-st1 { 0%, 41% { visibility: hidden; opacity: 0; } 42%, 72% { visibility: visible; opacity: 1; } 73%, 100% { visibility: hidden; opacity: 0; } }
+@keyframes hx-st2 { 0%, 72% { visibility: hidden; opacity: 0; } 73%, 95% { visibility: visible; opacity: 1; } 96%, 100% { visibility: hidden; opacity: 0; } }
+@keyframes hx-st3 { 0%, 95% { visibility: hidden; opacity: 0; } 96%, 100% { visibility: visible; opacity: 1; } }
+@keyframes hx-scan {
+  0% { opacity: 0; transform: translateX(0); }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(100%); }
 }

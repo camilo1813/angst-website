@@ -62,20 +62,20 @@ const matrix = [
 
   <main id="main">
     <!-- ============ HERO ============ -->
-    <section class="hero" aria-labelledby="hero-title">
+    <section class="hero" data-hero aria-labelledby="hero-title">
       <div class="wrap hero__grid">
         <div class="hero__copy">
-          <p class="eyebrow">ANGST</p>
+          <p class="eyebrow hx-eyebrow">ANGST</p>
           <h1 id="hero-title" class="display">
-            Life. Machines. Environments.
-            <span class="display__muted">One Safety Intelligence Layer.</span>
+            <span class="hx-w hx-w--life">Life.</span> <span class="hx-w hx-w--mach">Machines.</span> <span class="hx-w hx-w--env">Environments.</span>
+            <span class="display__muted hx-muted">One Safety Intelligence Layer.</span>
           </h1>
-          <p class="lead">
+          <p class="lead hx-lead">
             ANGST develops intelligence for understanding physical-world events across people, machines and
             environments — connecting observations, context and evidence rather than treating them as isolated
             signals.
           </p>
-          <div class="actions">
+          <div class="actions hx-actions">
             <a class="btn btn--dark" href="#kurtiq">Explore KURTIQ</a>
             <a class="btn btn--line" href="#collaborate">Collaborate with ANGST</a>
           </div>
@@ -86,10 +86,11 @@ const matrix = [
             <span class="console__title"><i class="dot"></i>Physical event</span>
             <span class="console__meta"><em>Event ID</em> EV-0427</span>
             <span class="console__meta console__meta--opt"><em>Window</em> 00:00:14.2</span>
-            <span class="pill">Under review</span>
+            <span class="pill hx-pill"><span class="hx-st hx-st--1">Observed</span><span class="hx-st hx-st--2">Correlated</span><span class="hx-st hx-st--3">Qualified</span></span>
           </div>
 
           <div class="console__field" aria-hidden="true">
+            <span class="console__scan"></span>
             <svg viewBox="0 0 720 440" focusable="false">
               <defs>
                 <pattern id="hg-s" width="20" height="20" patternUnits="userSpaceOnUse">
@@ -121,71 +122,73 @@ const matrix = [
               </g>
 
               <!-- ENVIRONMENT: zone footprint + restricted region -->
-              <path d="M80 60 H560 V170 H660 V390 H80 Z" fill="#FAFAF8" stroke="#1A1A1A" stroke-width="1.4" />
+              <path class="hx-zone" pathLength="1" d="M80 60 H560 V170 H660 V390 H80 Z" fill="#FAFAF8" stroke="#1A1A1A" stroke-width="1.4" />
+              <g class="hx-ctx">
               <path d="M440 250 H660 V390 H440 Z" fill="url(#hatch)" stroke="#8D8D88" stroke-width="1" />
               <path d="M80 300 H300" stroke="#8D8D88" stroke-width="1" stroke-dasharray="6 5" />
+              </g>
 
               <!-- camera viewpoint -->
-              <g>
+              <g class="hx-cam">
                 <path d="M84 64 L330 205 L250 300 Z" fill="#050505" fill-opacity="0.035" stroke="#B9B9B4" stroke-width="1" stroke-dasharray="3 4" />
                 <rect x="78" y="58" width="14" height="14" fill="#050505" />
               </g>
 
               <!-- MACHINE: footprint + operating envelope -->
-              <g>
+              <g class="hx-machine">
                 <path d="M520 205 m-118 0 a118 118 0 0 1 118 -118" fill="none" stroke="#8D8D88" stroke-width="1" stroke-dasharray="2 5" />
                 <circle cx="520" cy="205" r="118" fill="none" stroke="#E2E2DE" stroke-width="1" />
                 <rect x="490" y="175" width="60" height="60" fill="#FFFFFF" stroke="#050505" stroke-width="1.6" />
                 <rect x="508" y="193" width="24" height="24" fill="#050505" />
-                <path d="M520 205 L438 148" stroke="#050505" stroke-width="3" stroke-linecap="square" />
-                <rect x="430" y="140" width="14" height="14" fill="#FFFFFF" stroke="#050505" stroke-width="1.6" />
+                <g class="hx-arm"><path d="M520 205 L438 148" stroke="#050505" stroke-width="3" stroke-linecap="square" />
+                <rect x="430" y="140" width="14" height="14" fill="#FFFFFF" stroke="#050505" stroke-width="1.6" /></g>
               </g>
 
               <!-- LIFE: trajectory (temporal positions) + current position -->
-              <g>
-                <path class="trail" d="M160 360 C 200 330, 230 300, 270 280 S 340 236, 370 214" fill="none" stroke="#8D8D88" stroke-width="1.2" stroke-dasharray="1 6" stroke-linecap="round" />
+              <g class="hx-life">
+                <path class="hx-trail" d="M160 360 C 200 330, 230 300, 270 280 S 340 236, 370 214" fill="none" stroke="#8D8D88" stroke-width="1.2" stroke-dasharray="1 6" stroke-linecap="round" />
                 <g fill="#FFFFFF" stroke="#8D8D88" stroke-width="1.2">
-                  <circle cx="160" cy="360" r="3.5" />
-                  <circle cx="214" cy="318" r="3.5" />
-                  <circle cx="270" cy="280" r="3.5" />
-                  <circle cx="324" cy="246" r="3.5" />
+                  <circle class="hx-tp" style="--i:0" cx="160" cy="360" r="3.5" />
+                  <circle class="hx-tp" style="--i:1" cx="214" cy="318" r="3.5" />
+                  <circle class="hx-tp" style="--i:2" cx="270" cy="280" r="3.5" />
+                  <circle class="hx-tp" style="--i:3" cx="324" cy="246" r="3.5" />
                 </g>
-                <path d="M370 214 L404 178 A48 48 0 0 1 418 214 Z" fill="#050505" fill-opacity="0.08" />
+                <g class="hx-now"><path d="M370 214 L404 178 A48 48 0 0 1 418 214 Z" fill="#050505" fill-opacity="0.08" />
                 <circle cx="370" cy="214" r="9" fill="#050505" />
-                <circle cx="370" cy="214" r="17" fill="none" stroke="#050505" stroke-width="1" />
+                <circle cx="370" cy="214" r="17" fill="none" stroke="#050505" stroke-width="1" /></g>
               </g>
 
               <!-- relationship: proximity line person ↔ machine -->
-              <path d="M387 210 L432 158" stroke="#050505" stroke-width="1" />
-              <g class="svg-lbl" fill="#050505">
+              <path class="hx-prox" pathLength="1" d="M387 210 L432 158" stroke="#050505" stroke-width="1" />
+              <g class="svg-lbl hx-prox-lbl" fill="#050505">
                 <text x="414" y="196">0.9 m</text>
               </g>
 
               <!-- EVENT BOUNDARY -->
-              <g fill="none" stroke="#050505" stroke-width="1.6">
+              <g class="hx-ev-c" fill="none" stroke="#050505" stroke-width="1.6">
                 <path d="M310 118 h-16 v16" />
                 <path d="M470 118 h16 v16" />
                 <path d="M310 272 h-16 v-16" />
                 <path d="M470 272 h16 v-16" />
               </g>
-              <rect x="294" y="118" width="192" height="154" fill="none" stroke="#050505" stroke-width="1" stroke-dasharray="4 4" />
-              <g class="svg-lbl"><rect x="294" y="94" width="118" height="24" fill="#050505" />
+              <rect class="hx-ev-r" x="294" y="118" width="192" height="154" fill="none" stroke="#050505" stroke-width="1" stroke-dasharray="4 4" />
+              <g class="svg-lbl hx-ev-tag"><rect x="294" y="94" width="118" height="24" fill="#050505" />
               <text class="svg-tag" x="302" y="111" fill="#FFFFFF">EVENT · E-01</text></g>
 
               <!-- observation markers -->
               <g stroke="#050505" stroke-width="1.2" fill="none">
-                <g transform="translate(214 318)"><path d="M-9 0h-5M9 0h5M0 -9v-5M0 9v5" /><circle r="6" /></g>
-                <g transform="translate(560 300)"><path d="M-9 0h-5M9 0h5M0 -9v-5M0 9v5" /><circle r="6" /></g>
-                <g transform="translate(324 246)"><path d="M-9 0h-5M9 0h5M0 -9v-5M0 9v5" /><circle r="6" /></g>
+                <g class="hx-o hx-o1" transform="translate(214 318)"><path d="M-9 0h-5M9 0h5M0 -9v-5M0 9v5" /><circle r="6" /></g>
+                <g class="hx-o hx-o2" transform="translate(560 300)"><path d="M-9 0h-5M9 0h5M0 -9v-5M0 9v5" /><circle r="6" /></g>
+                <g class="hx-o hx-o3" transform="translate(324 246)"><path d="M-9 0h-5M9 0h5M0 -9v-5M0 9v5" /><circle r="6" /></g>
               </g>
               <g class="svg-lbl" fill="#050505">
-                <text x="226" y="336">O1</text>
-                <text x="572" y="318">O2</text>
-                <text x="336" y="266">O3</text>
+                <text class="hx-o hx-o1" x="226" y="336">O1</text>
+                <text class="hx-o hx-o2" x="572" y="318">O2</text>
+                <text class="hx-o hx-o3" x="336" y="266">O3</text>
               </g>
 
               <!-- entity labels (hidden on small screens; legend below carries them) -->
-              <g class="svg-lbl svg-lbl--key">
+              <g class="svg-lbl svg-lbl--key hx-keys">
                 <rect x="96" y="72" width="150" height="26" fill="#FFFFFF" stroke="#E2E2DE" />
                 <text x="105" y="90" fill="#1A1A1A">ENV · ZONE B</text>
                 <rect x="548" y="118" width="160" height="26" fill="#FFFFFF" stroke="#E2E2DE" />
@@ -204,7 +207,7 @@ const matrix = [
             <li class="console__illus">Illustrative</li>
           </ul>
 
-          <dl class="console__foot" aria-hidden="true">
+          <dl class="console__foot hx-foot" aria-hidden="true">
             <div><dt>Observations</dt><dd>3 linked</dd></div>
             <div><dt>Context</dt><dd>Zone B · M-01 active</dd></div>
             <div class="opt"><dt>Evidence state</dt><dd>Partial</dd></div>
@@ -762,3 +765,7 @@ const matrix = [
     </div>
   </footer>
 </BaseLayout>
+
+<script>
+  import '../scripts/hero.ts';
+</script>
